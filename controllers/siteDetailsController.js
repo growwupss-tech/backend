@@ -1,0 +1,150 @@
+const Site_Details = require('../models/Site_Details');
+
+// @desc    Get all site details
+// @route   GET /api/site-details
+// @access  Private
+const getSiteDetails = async (req, res) => {
+  try {
+    const sites = await Site_Details.find()
+      .populate('hero_slide_ids')
+      .populate('product_ids')
+      .populate('story_ids')
+      .populate('category_ids');
+    res.status(200).json({ success: true, count: sites.length, data: sites });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Get single site detail
+// @route   GET /api/site-details/:id
+// @access  Private
+const getSiteDetail = async (req, res) => {
+  try {
+    const site = await Site_Details.findById(req.params.id)
+      .populate('hero_slide_ids')
+      .populate('product_ids')
+      .populate('story_ids')
+      .populate('category_ids');
+
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+
+    res.status(200).json({ success: true, data: site });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Create site detail
+// @route   POST /api/site-details
+// @access  Private
+const createSiteDetail = async (req, res) => {
+  try {
+    const site = await Site_Details.create(req.body);
+    res.status(201).json({ success: true, data: site });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Update site detail
+// @route   PUT /api/site-details/:id
+// @access  Private
+const updateSiteDetail = async (req, res) => {
+  try {
+    const site = await Site_Details.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    })
+      .populate('hero_slide_ids')
+      .populate('product_ids')
+      .populate('story_ids')
+      .populate('category_ids');
+
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+
+    res.status(200).json({ success: true, data: site });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Delete site detail
+// @route   DELETE /api/site-details/:id
+// @access  Private
+const deleteSiteDetail = async (req, res) => {
+  try {
+    const site = await Site_Details.findById(req.params.id);
+
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+
+    await site.deleteOne();
+    res.status(200).json({ success: true, data: {} });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Add hero slide to site
+// @route   PUT /api/site-details/:id/hero-slides
+// @access  Private
+const addHeroSlide = async (req, res) => {
+  try {
+    const { hero_slide_id } = req.body;
+    const site = await Site_Details.findById(req.params.id);
+
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+
+    if (!site.hero_slide_ids.includes(hero_slide_id)) {
+      site.hero_slide_ids.push(hero_slide_id);
+      await site.save();
+    }
+
+    const updatedSite = await Site_Details.findById(req.params.id).populate('hero_slide_ids');
+    res.status(200).json({ success: true, data: updatedSite });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Remove hero slide from site
+// @route   DELETE /api/site-details/:id/hero-slides/:heroSlideId
+// @access  Private
+const removeHeroSlide = async (req, res) => {
+  try {
+    const site = await Site_Details.findById(req.params.id);
+
+    if (!site) {
+      return res.status(404).json({ message: 'Site not found' });
+    }
+
+    site.hero_slide_ids = site.hero_slide_ids.filter(
+      id => id.toString() !== req.params.heroSlideId
+    );
+    await site.save();
+
+    const updatedSite = await Site_Details.findById(req.params.id).populate('hero_slide_ids');
+    res.status(200).json({ success: true, data: updatedSite });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+module.exports = {
+  getSiteDetails,
+  getSiteDetail,
+  createSiteDetail,
+  updateSiteDetail,
+  deleteSiteDetail,
+  addHeroSlide,
+  removeHeroSlide,
+};
+
