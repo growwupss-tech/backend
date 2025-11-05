@@ -19,7 +19,7 @@ const buildPaths = () => ({
   '/api/auth/register': {
     post: {
       tags: ['Auth'],
-      summary: 'Register a user (optionally create seller)',
+      summary: 'Register a new user with email and password',
       requestBody: {
         required: true,
         content: {
@@ -32,7 +32,7 @@ const buildPaths = () => ({
   '/api/auth/login': {
     post: {
       tags: ['Auth'],
-      summary: 'Login with userId and password',
+      summary: 'Login with email and password',
       requestBody: {
         required: true,
         content: {
@@ -101,14 +101,19 @@ const buildPaths = () => ({
 
   // Sellers
   '/api/sellers': {
-    get: { tags: ['Sellers'], summary: 'List sellers', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } },
-    post: { tags: ['Sellers'], summary: 'Create seller', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerCreate' } } } }, responses: { 201: { description: 'Created' } } },
+    get: { tags: ['Sellers'], summary: 'List all sellers', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } },
+    post: { tags: ['Sellers'], summary: 'Create seller profile for authenticated user', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerCreate' } } } }, responses: { 201: { description: 'Created' }, 400: { description: 'User already has seller profile' } } },
+  },
+  '/api/sellers/me': {
+    get: { tags: ['Sellers'], summary: 'Get current user\'s seller profile', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
+    put: { tags: ['Sellers'], summary: 'Update current user\'s seller profile', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
+    delete: { tags: ['Sellers'], summary: 'Delete current user\'s seller profile', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
   },
   '/api/sellers/{id}': {
     parameters: [idParam],
-    get: { tags: ['Sellers'], summary: 'Get seller', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
-    put: { tags: ['Sellers'], summary: 'Update seller', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, responses: { 200: { description: 'OK' } } },
-    delete: { tags: ['Sellers'], summary: 'Delete seller', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
+    get: { tags: ['Sellers'], summary: 'Get seller by ID', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
+    put: { tags: ['Sellers'], summary: 'Update seller (own profile only)', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - can only update own profile' } } },
+    delete: { tags: ['Sellers'], summary: 'Delete seller (own profile only)', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - can only delete own profile' } } },
   },
 
   // Businesses
@@ -263,27 +268,18 @@ const swaggerSpec = {
       AuthRegisterRequest: {
         type: 'object',
         properties: {
+          email: { type: 'string', format: 'email' },
           password: { type: 'string', minLength: 6 },
-          sellerInfo: {
-            type: 'object',
-            properties: {
-              name: { type: 'string' },
-              phone_number: { type: 'number' },
-              whatsapp_number: { type: 'number' },
-              address: { type: 'string' },
-            },
-            required: ['name', 'phone_number', 'whatsapp_number', 'address'],
-          },
         },
-        required: ['password'],
+        required: ['email', 'password'],
       },
       AuthLoginRequest: {
         type: 'object',
         properties: {
-          userId: { type: 'string' },
+          email: { type: 'string', format: 'email' },
           password: { type: 'string' },
         },
-        required: ['userId', 'password'],
+        required: ['email', 'password'],
       },
       ProductCreate: {
         type: 'object',

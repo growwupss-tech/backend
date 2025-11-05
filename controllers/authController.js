@@ -1,43 +1,20 @@
 const User = require('../models/User');
-const Seller = require('../models/Seller');
 
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { password, sellerInfo } = req.body;
+    const { email, password } = req.body;
 
-    if (!password) {
-      return res.status(400).json({ message: 'Please provide a password' });
-    }
-
-    let sellerId = null;
-
-    // If seller info is provided, create seller first
-    if (sellerInfo) {
-      const { name, phone_number, whatsapp_number, address } = sellerInfo;
-      
-      if (!name || !phone_number || !whatsapp_number || !address) {
-        return res.status(400).json({ 
-          message: 'Please provide all seller information (name, phone_number, whatsapp_number, address)' 
-        });
-      }
-
-      const seller = await Seller.create({
-        name,
-        phone_number,
-        whatsapp_number,
-        address,
-      });
-
-      sellerId = seller._id;
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
     }
 
     // Create user
     const user = await User.create({
+      email,
       password,
-      seller_id: sellerId,
     });
 
     const token = user.getSignedJwtToken();
@@ -47,10 +24,14 @@ const register = async (req, res) => {
       token,
       user: {
         _id: user._id,
+        email: user.email,
         seller_id: user.seller_id,
       },
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
     console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
@@ -61,14 +42,14 @@ const register = async (req, res) => {
 // @access  Public
 const login = async (req, res) => {
   try {
-    const { userId, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!userId || !password) {
-      return res.status(400).json({ message: 'Please provide user ID and password' });
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // Check for user
-    const user = await User.findById(userId).select('+password').populate('seller_id');
+    // Check for user by email
+    const user = await User.findOne({ email }).select('+password').populate('seller_id');
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -88,6 +69,7 @@ const login = async (req, res) => {
       token,
       user: {
         _id: user._id,
+        email: user.email,
         seller_id: user.seller_id,
       },
     });

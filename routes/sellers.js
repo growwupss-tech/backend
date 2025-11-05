@@ -7,10 +7,23 @@ const {
   updateSeller,
   deleteSeller,
 } = require('../controllers/sellerController');
-const { protect, isSeller } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
-router.route('/').get(protect, getSellers).post(protect, isSeller, createSeller);
-router.route('/:id').get(protect, getSeller).put(protect, isSeller, updateSeller).delete(protect, isSeller, deleteSeller);
+// Get all sellers (admin only - can be enhanced later)
+router.get('/', protect, getSellers);
+
+// Create seller profile for authenticated user
+router.post('/', protect, createSeller);
+
+// Get/update/delete own seller profile (must be before /:id route)
+router.get('/me', protect, getSeller);
+router.put('/me', protect, updateSeller);
+router.delete('/me', protect, deleteSeller);
+
+// Get/update/delete specific seller by ID
+router.get('/:id', protect, getSeller);
+router.put('/:id', protect, updateSeller);
+router.delete('/:id', protect, deleteSeller);
 
 module.exports = router;
 
