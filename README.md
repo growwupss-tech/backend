@@ -28,9 +28,11 @@ A comprehensive backend API for the Site Snap platform built with Node.js, Expre
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
+3. Create a `.env` file in the backend directory:
 ```env
 PORT=3000
+# For MongoDB Atlas use the full SRV with username/password embedded
+# Example: mongodb+srv://<username>:<password>@<cluster-host>/<db-name>?retryWrites=true&w=majority
 MONGODB_URI=mongodb://localhost:27017/site-snap
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRE=7d
@@ -63,6 +65,11 @@ npm run dev
 ```
 
 ## API Endpoints
+
+### Swagger UI
+
+- Open your browser at `http://localhost:3000/api-docs` to explore and call the APIs directly.
+- For protected endpoints, click "Authorize" in Swagger and paste `Bearer <your-jwt-token>`.
 
 ### Authentication
 
