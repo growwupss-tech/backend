@@ -7,11 +7,11 @@ const {
   updateCategory,
   deleteCategory,
 } = require('../controllers/categoryController');
-const { protect, isSeller } = require('../middleware/auth');
+const { protect, optionalProtect, isSeller } = require('../middleware/auth');
 
-// Public routes
-router.get('/', getCategories);
-router.get('/:id', getCategory);
+// Public routes (with optional auth for filtering)
+router.get('/', optionalProtect, getCategories);
+router.get('/:id', optionalProtect, getCategory);
 
 // Protected routes
 router.post('/', protect, isSeller, createCategory);

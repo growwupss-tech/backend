@@ -33,6 +33,38 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Optional protect - sets req.user if token is provided, but doesn't fail if not
+const optionalProtect = async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      // Get token from header
+      token = req.headers.authorization.split(' ')[1];
+
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+      // Get user from the token
+      req.user = await User.findById(decoded.id).select('-password').populate('seller_id');
+
+      // Continue even if user not found (optional auth)
+      next();
+    } catch (error) {
+      // Continue without user if token is invalid (optional auth)
+      req.user = null;
+      next();
+    }
+  } else {
+    // No token provided, continue without user
+    req.user = null;
+    next();
+  }
+};
+
 // Check if user is an admin
 const isAdmin = async (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
@@ -132,5 +164,5 @@ const ownsBusiness = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, isAdmin, isSeller, isVisitor, ownsResource, ownsBusiness };
+module.exports = { protect, optionalProtect, isAdmin, isSeller, isVisitor, ownsResource, ownsBusiness };
 

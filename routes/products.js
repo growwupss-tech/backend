@@ -8,12 +8,12 @@ const {
   deleteProduct,
   incrementRedirect,
 } = require('../controllers/productController');
-const { protect, isSeller } = require('../middleware/auth');
+const { protect, optionalProtect, isSeller } = require('../middleware/auth');
 const { uploadMultipleBase64 } = require('../middleware/uploadBase64');
 
-// Public routes
-router.get('/', getProducts);
-router.get('/:id', getProduct);
+// Public routes (with optional auth for filtering)
+router.get('/', optionalProtect, getProducts);
+router.get('/:id', optionalProtect, getProduct);
 router.put('/:id/redirect', incrementRedirect);
 
 // Protected routes with file upload

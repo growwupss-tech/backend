@@ -57,6 +57,8 @@ const buildPaths = () => ({
     get: {
       tags: ['Products'],
       summary: 'List products',
+      description: 'Public access: returns all products. Authenticated Seller: returns only own products. Admin: returns all products.',
+      security: [{ bearerAuth: [] }], // Optional authentication
       parameters: [
         { name: 'is_visible', in: 'query', schema: { type: 'boolean' } },
         { name: 'category_id', in: 'query', schema: { type: 'string' } },
@@ -95,7 +97,13 @@ const buildPaths = () => ({
   },
   '/api/products/{id}': {
     parameters: [idParam],
-    get: { tags: ['Products'], summary: 'Get product', responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
+    get: { 
+      tags: ['Products'], 
+      summary: 'Get product',
+      description: 'Public access: can view any product. Authenticated Seller: can only view own products. Admin: can view any product.',
+      security: [{ bearerAuth: [] }], // Optional authentication
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access own products' }, 404: { description: 'Not found' } } 
+    },
     put: {
       tags: ['Products'],
       summary: 'Update product',
@@ -134,12 +142,24 @@ const buildPaths = () => ({
 
   // Categories
   '/api/categories': {
-    get: { tags: ['Categories'], summary: 'List categories', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Categories'], 
+      summary: 'List categories',
+      description: 'Public access: returns all categories. Authenticated Seller: returns only own categories. Admin: returns all categories.',
+      security: [{ bearerAuth: [] }], // Optional authentication
+      responses: { 200: { description: 'OK' } } 
+    },
     post: { tags: ['Categories'], summary: 'Create category', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryCreate' } } } }, responses: { 201: { description: 'Created' } } },
   },
   '/api/categories/{id}': {
     parameters: [idParam],
-    get: { tags: ['Categories'], summary: 'Get category', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Categories'], 
+      summary: 'Get category',
+      description: 'Public access: can view any category. Authenticated Seller: can only view own categories. Admin: can view any category.',
+      security: [{ bearerAuth: [] }], // Optional authentication
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access own categories' }, 404: { description: 'Not found' } } 
+    },
     put: { tags: ['Categories'], summary: 'Update category', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryUpdate' } } } }, responses: { 200: { description: 'OK' } } },
     delete: { tags: ['Categories'], summary: 'Delete category', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },
@@ -352,12 +372,24 @@ const buildPaths = () => ({
 
   // Attributes
   '/api/attributes': {
-    get: { tags: ['Attributes'], summary: 'List attributes', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Attributes'], 
+      summary: 'List attributes',
+      description: 'Public access: returns all attributes. Authenticated Seller: returns only attributes from own products. Admin: returns all attributes.',
+      security: [{ bearerAuth: [] }], // Optional authentication
+      responses: { 200: { description: 'OK' } } 
+    },
     post: { tags: ['Attributes'], summary: 'Create attribute', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AttributeCreate' } } } }, responses: { 201: { description: 'Created' } } },
   },
   '/api/attributes/{id}': {
     parameters: [idParam],
-    get: { tags: ['Attributes'], summary: 'Get attribute', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Attributes'], 
+      summary: 'Get attribute',
+      description: 'Public access: can view any attribute. Authenticated Seller: can only view attributes from own products. Admin: can view any attribute.',
+      security: [{ bearerAuth: [] }], // Optional authentication
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access attributes from own products' }, 404: { description: 'Not found' } } 
+    },
     put: { tags: ['Attributes'], summary: 'Update attribute', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/AttributeUpdate' } } } }, responses: { 200: { description: 'OK' } } },
     delete: { tags: ['Attributes'], summary: 'Delete attribute', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },

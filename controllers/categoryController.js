@@ -5,7 +5,16 @@ const Category = require('../models/Category');
 // @access  Public
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find();
+    let query = {};
+
+    // Admin can see all categories, Seller can only see their own
+    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id?._id || req.user.seller_id;
+      query.seller_id = sellerId;
+    }
+    // If admin or public, no seller_id filter
+
+    const categories = await Category.find(query);
     res.status(200).json({ success: true, count: categories.length, data: categories });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -23,6 +32,15 @@ const getCategory = async (req, res) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
+    // Check access: Admin can access any, Seller can only access own
+    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id?._id || req.user.seller_id;
+      const categorySellerId = category.seller_id?._id || category.seller_id;
+      if (sellerId.toString() !== categorySellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only access your own categories.' });
+      }
+    }
+
     res.status(200).json({ success: true, data: category });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -34,6 +52,33 @@ const getCategory = async (req, res) => {
 // @access  Private
 const createCategory = async (req, res) => {
   try {
+    // If seller_id not provided, use from authenticated user
+    if (!req.body.seller_id) {
+      if (req.user.role === 'admin') {
+        return res.status(400).json({
+          message: 'Admin must provide seller_id when creating category'
+        });
+      }
+      if (req.user && req.user.seller_id) {
+        req.body.seller_id = req.user.seller_id._id || req.user.seller_id;
+      } else {
+        return res.status(403).json({
+          message: 'Access denied. You must have a seller profile to create a category.'
+        });
+      }
+    } else {
+      // Sellers can only create categories for themselves
+      if (req.user.role === 'seller' && req.user.seller_id) {
+        const sellerId = req.user.seller_id._id || req.user.seller_id;
+        if (req.body.seller_id.toString() !== sellerId.toString()) {
+          return res.status(403).json({
+            message: 'Access denied. You can only create categories for yourself.'
+          });
+        }
+      }
+      // Admin can create categories for any seller
+    }
+
     const category = await Category.create(req.body);
     res.status(201).json({ success: true, data: category });
   } catch (error) {
@@ -49,14 +94,26 @@ const createCategory = async (req, res) => {
 // @access  Private
 const updateCategory = async (req, res) => {
   try {
+    const existingCategory = await Category.findById(req.params.id);
+
+    if (!existingCategory) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    // Check access: Admin can update any, Seller can only update own
+    if (req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id._id || req.user.seller_id;
+      const categorySellerId = existingCategory.seller_id?._id || existingCategory.seller_id;
+      if (sellerId.toString() !== categorySellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only update your own categories.' });
+      }
+    }
+    // Admin can update any category
+
     const category = await Category.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
-
-    if (!category) {
-      return res.status(404).json({ message: 'Category not found' });
-    }
 
     res.status(200).json({ success: true, data: category });
   } catch (error) {
@@ -77,6 +134,16 @@ const deleteCategory = async (req, res) => {
     if (!category) {
       return res.status(404).json({ message: 'Category not found' });
     }
+
+    // Check access: Admin can delete any, Seller can only delete own
+    if (req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id._id || req.user.seller_id;
+      const categorySellerId = category.seller_id?._id || category.seller_id;
+      if (sellerId.toString() !== categorySellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only delete your own categories.' });
+      }
+    }
+    // Admin can delete any category
 
     await category.deleteOne();
     res.status(200).json({ success: true, data: {} });

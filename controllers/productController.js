@@ -9,6 +9,15 @@ const getProducts = async (req, res) => {
     const { is_visible, category_id } = req.query;
     let query = {};
 
+    // Admin can see all products, Seller can only see their own
+    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id?._id || req.user.seller_id;
+      if (sellerId) {
+        query.seller_id = sellerId;
+      }
+    }
+    // If admin or public, no seller_id filter
+
     if (is_visible !== undefined) {
       query.is_visible = is_visible === 'true';
     }
@@ -40,6 +49,15 @@ const getProduct = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Check access: Admin can access any, Seller can only access own
+    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id?._id || req.user.seller_id;
+      const productSellerId = product.seller_id?._id || product.seller_id;
+      if (sellerId.toString() !== productSellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only access your own products.' });
+      }
+    }
+
     // Increment visits
     product.visits += 1;
     await product.save();
@@ -55,6 +73,33 @@ const getProduct = async (req, res) => {
 // @access  Private
 const createProduct = async (req, res) => {
   try {
+    // If seller_id not provided, use from authenticated user
+    if (!req.body.seller_id) {
+      if (req.user.role === 'admin') {
+        return res.status(400).json({
+          message: 'Admin must provide seller_id when creating product'
+        });
+      }
+      if (req.user && req.user.seller_id) {
+        req.body.seller_id = req.user.seller_id._id || req.user.seller_id;
+      } else {
+        return res.status(403).json({
+          message: 'Access denied. You must have a seller profile to create a product.'
+        });
+      }
+    } else {
+      // Sellers can only create products for themselves
+      if (req.user.role === 'seller' && req.user.seller_id) {
+        const sellerId = req.user.seller_id._id || req.user.seller_id;
+        if (req.body.seller_id.toString() !== sellerId.toString()) {
+          return res.status(403).json({
+            message: 'Access denied. You can only create products for yourself.'
+          });
+        }
+      }
+      // Admin can create products for any seller
+    }
+
     // Get URLs from uploaded files that were processed by uploadBase64 middleware
     const imageUrls = [];
     if (req.uploadedFiles && req.uploadedFiles.length > 0) {
@@ -107,6 +152,24 @@ const updateProduct = async (req, res) => {
       }
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    // Check access: Admin can update any, Seller can only update own
+    if (req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id._id || req.user.seller_id;
+      const productSellerId = existingProduct.seller_id?._id || existingProduct.seller_id;
+      if (sellerId.toString() !== productSellerId.toString()) {
+        // Clean up uploaded files
+        if (req.files && req.files.length > 0) {
+          try {
+            await deleteMultipleFromCloudinary(req.files.map(f => f.path));
+          } catch (deleteError) {
+            console.error('Error cleaning up uploaded files:', deleteError);
+          }
+        }
+        return res.status(403).json({ message: 'Access denied. You can only update your own products.' });
+      }
+    }
+    // Admin can update any product
 
     // Handle new image uploads
     const newImageUrls = [];
@@ -180,6 +243,16 @@ const deleteProduct = async (req, res) => {
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    // Check access: Admin can delete any, Seller can only delete own
+    if (req.user.role === 'seller' && req.user.seller_id) {
+      const sellerId = req.user.seller_id._id || req.user.seller_id;
+      const productSellerId = product.seller_id?._id || product.seller_id;
+      if (sellerId.toString() !== productSellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only delete your own products.' });
+      }
+    }
+    // Admin can delete any product
 
     // Delete all images from Cloudinary
     if (product.images && product.images.length > 0) {
