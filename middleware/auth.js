@@ -53,13 +53,15 @@ const isSeller = async (req, res, next) => {
   }
   
   // Check if user is seller and has seller_id
-  if (req.user.role !== 'seller' || !req.user.seller_id) {
+  // Handle both populated object and ObjectId
+  const sellerId = req.user.seller_id?._id || req.user.seller_id;
+  if (req.user.role !== 'seller' || !sellerId) {
     return res.status(403).json({ 
       message: 'Access denied. Seller privileges required. Please upgrade your account.' 
     });
   }
   
-  req.seller = req.user.seller_id;
+  req.seller = sellerId;
   next();
 };
 

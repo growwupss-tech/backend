@@ -15,11 +15,6 @@ router.get('/', protect, getSellers);
 // Create seller profile (visitors can create, which upgrades them to seller)
 router.post('/', protect, createSeller);
 
-// Get/update/delete own seller profile (must be before /:id route)
-router.get('/me', protect, isSeller, getSeller);
-router.put('/me', protect, isSeller, updateSeller);
-router.delete('/me', protect, isSeller, deleteSeller);
-
 // Get/update/delete specific seller by ID (admin can access any, seller can only access own)
 router.get('/:id', protect, isSeller, getSeller);
 router.put('/:id', protect, isSeller, updateSeller);
