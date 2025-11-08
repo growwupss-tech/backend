@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Upload multiple files</title>
+  </head>
+  <body>
+    <h1>Upload multiple files to /api/uploads</h1>
+    <form action="/api/uploads" method="post" enctype="multipart/form-data">
+      <input
+        type="file"
+        name="files"
+        multiple
+        accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm"
+      />
+      <br />
+      <button type="submit">Upload</button>
+    </form>
+
+    <p>Note: field name must be <code>files</code> to match the server middleware.</p>
+  </body>
+</html>

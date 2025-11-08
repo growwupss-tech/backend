@@ -35,6 +35,7 @@ app.use('/api/hero-slides', require('./routes/heroSlides'));
 app.use('/api/stories', require('./routes/stories'));
 app.use('/api/story-cards', require('./routes/storyCards'));
 app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/uploads', require('./routes/uploads'));
 
 // Health check
 app.get('/api/health', (req, res) => {

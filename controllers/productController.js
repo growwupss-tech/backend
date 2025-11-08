@@ -55,11 +55,11 @@ const getProduct = async (req, res) => {
 // @access  Private
 const createProduct = async (req, res) => {
   try {
-    // Extract image URLs from uploaded files
+    // Get URLs from uploaded files that were processed by uploadBase64 middleware
     const imageUrls = [];
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        imageUrls.push(file.path);
+    if (req.uploadedFiles && req.uploadedFiles.length > 0) {
+      req.uploadedFiles.forEach((file) => {
+        imageUrls.push(file.url);
       });
     }
 
@@ -110,24 +110,31 @@ const updateProduct = async (req, res) => {
 
     // Handle new image uploads
     const newImageUrls = [];
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file) => {
-        newImageUrls.push(file.path);
+    if (req.uploadedFiles && req.uploadedFiles.length > 0) {
+      req.uploadedFiles.forEach((file) => {
+        newImageUrls.push(file.url);
       });
     }
 
     // Determine which old images to delete
-    const imagesToKeep = req.body.imagesToKeep || [];
+    // If imagesToKeep is not provided at all, keep all existing images
+    // If it's provided (even as empty array), only keep the specified images
+    const imagesToKeep = req.body.hasOwnProperty('imagesToKeep') 
+      ? (req.body.imagesToKeep || [])
+      : existingProduct.images;
+    
+    // Find images that aren't in the keep list
     const imagesToDelete = existingProduct.images.filter(
       (img) => !imagesToKeep.includes(img)
     );
 
-    // Delete old images from Cloudinary that are being replaced
+    // Delete unmentioned images from Cloudinary
     if (imagesToDelete.length > 0) {
       try {
+        console.log('Deleting images from Cloudinary:', imagesToDelete);
         await deleteMultipleFromCloudinary(imagesToDelete);
       } catch (deleteError) {
-        console.error('Error deleting old images:', deleteError);
+        console.error('Error deleting images from Cloudinary:', deleteError);
       }
     }
 

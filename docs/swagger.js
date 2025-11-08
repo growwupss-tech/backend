@@ -66,7 +66,28 @@ const buildPaths = () => ({
       tags: ['Products'],
       summary: 'Create product',
       security: [{ bearerAuth: [] }],
-      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ProductCreate' } } } },
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                product_name: { type: 'string' },
+                product_descriptio: { type: 'string' },
+                price: { type: 'number' },
+                is_visible: { type: 'boolean' },
+                inventory: { type: 'string' },
+                category_id: { type: 'string' },
+                attribute_ids: { type: 'array', items: { type: 'string' } },
+                images: { type: 'array', items: { type: 'string', format: 'binary' } },
+              },
+              required: ['product_name', 'price', 'category_id'],
+              description: "images: accept multiple files of types ['jpg','jpeg','png','gif','webp','mp4','mov','avi','webm']",
+            },
+          },
+        },
+      },
       responses: { 201: { description: 'Created' }, 401: { description: 'Unauthorized' } },
     },
   },
@@ -77,7 +98,28 @@ const buildPaths = () => ({
       tags: ['Products'],
       summary: 'Update product',
       security: [{ bearerAuth: [] }],
-      requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/ProductUpdate' } } } },
+      requestBody: {
+        required: false,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                product_name: { type: 'string' },
+                product_descriptio: { type: 'string' },
+                price: { type: 'number' },
+                is_visible: { type: 'boolean' },
+                inventory: { type: 'string' },
+                category_id: { type: 'string' },
+                attribute_ids: { type: 'array', items: { type: 'string' } },
+                images: { type: 'array', items: { type: 'string', format: 'binary' } },
+                imagesToKeep: { type: 'array', items: { type: 'string' }, description: 'URLs of existing images to keep' },
+              },
+              description: "images: accept multiple files of types ['jpg','jpeg','png','gif','webp','mp4','mov','avi','webm']",
+            },
+          },
+        },
+      },
       responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } },
     },
     delete: { tags: ['Products'], summary: 'Delete product', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } },
@@ -233,6 +275,29 @@ const buildPaths = () => ({
   },
 
   // Health
+  // Uploads
+  '/api/uploads': {
+    post: {
+      tags: ['Uploads'],
+      summary: 'Upload multiple files (images or videos)',
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                files: { type: 'array', items: { type: 'string', format: 'binary' } },
+              },
+              required: ['files'],
+              description: "Accepted file types: ['jpg','jpeg','png','gif','webp','mp4','mov','avi','webm']",
+            },
+          },
+        },
+      },
+      responses: { 201: { description: 'Created' }, 400: { description: 'Bad request' } },
+    },
+  },
   '/api/health': {
     get: { tags: ['Health'], summary: 'Health check', responses: { 200: { description: 'OK' } } },
   },
@@ -260,6 +325,7 @@ const swaggerSpec = {
     { name: 'StoryCards' },
     { name: 'Attributes' },
     { name: 'Analytics' },
+    { name: 'Uploads' },
     { name: 'Health' },
   ],
   components: {
@@ -284,27 +350,43 @@ const swaggerSpec = {
       ProductCreate: {
         type: 'object',
         properties: {
-          images: { type: 'array', items: { type: 'string' } },
-          product_name: { type: 'string' },
-          product_descriptio: { type: 'string' },
-          price: { type: 'number' },
-          is_visible: { type: 'boolean' },
-          inventory: { type: 'string' },
-          category_id: { type: 'string' },
-          attribute_ids: { type: 'array', items: { type: 'string' } },
+          images: {
+            type: 'array',
+            items: { type: 'string', format: 'binary' },
+            description: "Upload multiple files. Accepted types: ['jpg','jpeg','png','gif','webp','mp4','mov','avi','webm']"
+          },
+          product_name: { type: 'string', example: 'Cool T-Shirt' },
+          product_descriptio: { type: 'string', example: 'A very cool t-shirt' },
+          price: { type: 'number', example: 29.99 },
+          is_visible: { type: 'boolean', default: true },
+          inventory: { type: 'string', default: 'In Stock' },
+          category_id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+          attribute_ids: { type: 'array', items: { type: 'string' }, example: ['507f1f77bcf86cd799439011'] },
         },
         required: ['product_name', 'price', 'category_id'],
       },
       ProductUpdate: {
-        allOf: [
-          { $ref: '#/components/schemas/ProductCreate' },
-          {
-            type: 'object',
-            properties: {
-              imagesToKeep: { type: 'array', items: { type: 'string' } },
-            },
+        type: 'object',
+        properties: {
+          images: {
+            type: 'array',
+            items: { type: 'string', format: 'binary' },
+            description: "Upload new images. Accepted types: ['jpg','jpeg','png','gif','webp','mp4','mov','avi','webm']"
           },
-        ],
+          imagesToKeep: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of existing image URLs to keep. Images not in this list will be deleted.',
+            example: ['https://res.cloudinary.com/demo/image/upload/v1/products/image1.jpg']
+          },
+          product_name: { type: 'string', example: 'Cool T-Shirt' },
+          product_descriptio: { type: 'string', example: 'A very cool t-shirt' },
+          price: { type: 'number', example: 29.99 },
+          is_visible: { type: 'boolean' },
+          inventory: { type: 'string' },
+          category_id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+          attribute_ids: { type: 'array', items: { type: 'string' }, example: ['507f1f77bcf86cd799439011'] },
+        },
       },
       CategoryCreate: {
         type: 'object',
