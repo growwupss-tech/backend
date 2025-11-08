@@ -4,7 +4,8 @@ A comprehensive backend API for the Site Snap platform built with Node.js, Expre
 
 ## Features
 
-- **Authentication & Authorization**: JWT-based authentication with role-based access control
+- **Authentication & Authorization**: JWT-based authentication with role-based access control (RBAC)
+- **Role-Based Access Control**: Three roles - Admin, Seller, and Visitor with appropriate permissions
 - **MongoDB Database**: JSON document structure matching the ERD schema
 - **RESTful APIs**: Complete CRUD operations for all entities
 - **Relationship Management**: Proper handling of references between entities
@@ -73,26 +74,36 @@ npm run dev
 
 ### Authentication
 
-- `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login user
+- `POST /api/auth/register` - Register a new user (Public - Creates visitor role)
+- `POST /api/auth/login` - Login user (Public)
 - `GET /api/auth/me` - Get current user (Protected)
+
+### Admin (Admin Role Required)
+
+- `GET /api/admin/users` - Get all users (Admin only)
+- `GET /api/admin/users/:id` - Get user by ID (Admin only)
+- `PUT /api/admin/users/:id/role` - Update user role (Admin only)
+- `DELETE /api/admin/users/:id` - Delete user (Admin only)
 
 ### Sellers
 
-- `GET /api/sellers` - Get all sellers (Protected)
-- `GET /api/sellers/:id` - Get single seller (Protected)
-- `POST /api/sellers` - Create seller (Protected, Seller only)
-- `PUT /api/sellers/:id` - Update seller (Protected, Seller only)
-- `DELETE /api/sellers/:id` - Delete seller (Protected, Seller only)
+- `GET /api/sellers` - Get all sellers (Admin: all, Seller: own only)
+- `GET /api/sellers/me` - Get current user's seller profile (Seller role required)
+- `GET /api/sellers/:id` - Get seller by ID (Admin: any, Seller: own only)
+- `POST /api/sellers` - Create seller profile (Upgrades visitor to seller role)
+- `PUT /api/sellers/me` - Update own seller profile (Seller role required)
+- `PUT /api/sellers/:id` - Update seller (Admin: any, Seller: own only)
+- `DELETE /api/sellers/me` - Delete own seller profile (Seller role required, downgrades to visitor)
+- `DELETE /api/sellers/:id` - Delete seller (Admin: any, Seller: own only)
 
 ### Businesses
 
-- `GET /api/businesses` - Get all businesses (Protected)
-- `GET /api/businesses/seller/:sellerId` - Get businesses by seller (Protected, Seller only)
-- `GET /api/businesses/:id` - Get single business (Protected)
-- `POST /api/businesses` - Create business (Protected, Seller only)
-- `PUT /api/businesses/:id` - Update business (Protected, Owner only)
-- `DELETE /api/businesses/:id` - Delete business (Protected, Owner only)
+- `GET /api/businesses` - Get all businesses (Admin: all, Seller: own only)
+- `GET /api/businesses/seller/:sellerId` - Get businesses by seller (Admin: any, Seller: own only)
+- `GET /api/businesses/:id` - Get single business (Admin: any, Seller: own only)
+- `POST /api/businesses` - Create business (Seller role required, Admin can create for any seller)
+- `PUT /api/businesses/:id` - Update business (Admin: any, Seller: own only)
+- `DELETE /api/businesses/:id` - Delete business (Admin: any, Seller: own only)
 
 ### Site Details
 
@@ -166,12 +177,70 @@ npm run dev
 - `PUT /api/analytics/:id/views` - Increment views (Public)
 - `PUT /api/analytics/:id/clicks` - Increment clicks (Public)
 
+## Role-Based Access Control (RBAC)
+
+The system implements three roles with different access levels:
+
+### 1. **Visitor** (Default Role)
+- **Access**: Can only register and login
+- **Upgrade**: After purchase, can create seller profile to upgrade to "seller" role
+- **Endpoints**: 
+  - `POST /api/auth/register` (Public)
+  - `POST /api/auth/login` (Public)
+  - `POST /api/sellers` (Creates seller profile and upgrades to seller role)
+
+### 2. **Seller**
+- **Access**: Can access seller-related routes for their own data only
+- **Restrictions**: Cannot access other sellers' data
+- **Endpoints**:
+  - All seller profile routes (own data only)
+  - All business routes (own businesses only)
+  - Product, category, attribute management
+  - Site details, hero slides, stories management
+  - Analytics (own data)
+
+### 3. **Admin**
+- **Access**: Can access ALL routes and manage all users
+- **Privileges**: 
+  - Full access to all sellers (view, update, delete any seller)
+  - Full access to all businesses (view, update, delete any business)
+  - User management (view, update roles, delete users)
+  - All seller-related routes
+- **Endpoints**:
+  - `/api/admin/users` - User management
+  - All seller routes (can access any seller)
+  - All business routes (can access any business)
+  - All other routes
+
+### Role Upgrade Flow
+
+1. **Visitor Registration**: User registers → Gets "visitor" role
+2. **Purchase & Upgrade**: Visitor creates seller profile → Role upgrades to "seller"
+3. **Admin Assignment**: Admin can manually assign "admin" role via `/api/admin/users/:id/role`
+
 ## Authentication
 
 To use protected routes, include the JWT token in the Authorization header:
 
 ```
 Authorization: Bearer <your-jwt-token>
+```
+
+### Getting Your Role
+
+After login, the response includes your role:
+
+```json
+{
+  "success": true,
+  "token": "...",
+  "user": {
+    "_id": "...",
+    "email": "user@example.com",
+    "role": "visitor",  // or "seller" or "admin"
+    "seller_id": null
+  }
+}
 ```
 
 ### Register Example
@@ -269,10 +338,11 @@ All uploaded files are automatically stored in Cloudinary's `site-snap` folder a
 
 ## Authorization Levels
 
-1. **Public** - No authentication required
-2. **Protected** - Requires valid JWT token
-3. **Seller Only** - Requires authentication and seller association
-4. **Owner Only** - Requires authentication and ownership of the resource
+1. **Public** - No authentication required (Register, Login, Public product/category views)
+2. **Protected** - Requires valid JWT token (Any authenticated user)
+3. **Seller Role** - Requires seller role or admin role
+4. **Admin Role** - Requires admin role (Full system access)
+5. **Owner Only** - Sellers can only access their own resources (Admin can access all)
 
 ## Error Handling
 

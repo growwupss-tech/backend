@@ -19,7 +19,8 @@ const buildPaths = () => ({
   '/api/auth/register': {
     post: {
       tags: ['Auth'],
-      summary: 'Register a new user with email and password',
+      summary: 'Register a new user with email and password (Creates visitor role by default)',
+      description: 'Public endpoint. New users are created with "visitor" role. After purchase, they can create a seller profile to upgrade to "seller" role.',
       requestBody: {
         required: true,
         content: {
@@ -99,37 +100,170 @@ const buildPaths = () => ({
     delete: { tags: ['Categories'], summary: 'Delete category', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },
 
+  // Admin
+  '/api/admin/users': {
+    get: { 
+      tags: ['Admin'], 
+      summary: 'Get all users (Admin only)', 
+      description: 'Admin role required. Returns all users in the system.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Admin role required' } } 
+    },
+  },
+  '/api/admin/users/{id}/role': {
+    parameters: [idParam],
+    put: {
+      tags: ['Admin'],
+      summary: 'Update user role (Admin only)',
+      description: 'Admin can change user roles: visitor, seller, or admin',
+      security: [{ bearerAuth: [] }],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: { $ref: '#/components/schemas/UserRoleUpdate' },
+          },
+        },
+      },
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Admin role required' } },
+    },
+  },
+  '/api/admin/users/{id}': {
+    parameters: [idParam],
+    get: { 
+      tags: ['Admin'], 
+      summary: 'Get user by ID (Admin only)', 
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Admin role required' }, 404: { description: 'Not found' } } 
+    },
+    delete: { 
+      tags: ['Admin'], 
+      summary: 'Delete user (Admin only)', 
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Admin role required' } } 
+    },
+  },
+
   // Sellers
   '/api/sellers': {
-    get: { tags: ['Sellers'], summary: 'List all sellers', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } },
-    post: { tags: ['Sellers'], summary: 'Create seller profile for authenticated user', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerCreate' } } } }, responses: { 201: { description: 'Created' }, 400: { description: 'User already has seller profile' } } },
+    get: { 
+      tags: ['Sellers'], 
+      summary: 'List sellers', 
+      description: 'Admin: sees all sellers. Seller: sees own seller profile only.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 403: { description: 'Forbidden' } } 
+    },
+    post: { 
+      tags: ['Sellers'], 
+      summary: 'Create seller profile (upgrades visitor to seller)', 
+      description: 'Visitor or Seller role can create seller profile. This upgrades visitor role to seller after purchase.',
+      security: [{ bearerAuth: [] }], 
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerCreate' } } } }, 
+      responses: { 201: { description: 'Created' }, 400: { description: 'User already has seller profile' }, 403: { description: 'Forbidden' } } 
+    },
   },
   '/api/sellers/me': {
-    get: { tags: ['Sellers'], summary: 'Get current user\'s seller profile', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
-    put: { tags: ['Sellers'], summary: 'Update current user\'s seller profile', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
-    delete: { tags: ['Sellers'], summary: 'Delete current user\'s seller profile', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'No seller profile found' } } },
+    get: { 
+      tags: ['Sellers'], 
+      summary: 'Get current user\'s seller profile', 
+      description: 'Seller role required. Admin can also access.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
+    },
+    put: { 
+      tags: ['Sellers'], 
+      summary: 'Update current user\'s seller profile', 
+      description: 'Seller role required. Admin can also access.',
+      security: [{ bearerAuth: [] }], 
+      requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
+    },
+    delete: { 
+      tags: ['Sellers'], 
+      summary: 'Delete current user\'s seller profile', 
+      description: 'Seller role required. Admin can also access. Downgrades role to visitor.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
+    },
   },
   '/api/sellers/{id}': {
     parameters: [idParam],
-    get: { tags: ['Sellers'], summary: 'Get seller by ID', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 404: { description: 'Not found' } } },
-    put: { tags: ['Sellers'], summary: 'Update seller (own profile only)', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - can only update own profile' } } },
-    delete: { tags: ['Sellers'], summary: 'Delete seller (own profile only)', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - can only delete own profile' } } },
+    get: { 
+      tags: ['Sellers'], 
+      summary: 'Get seller by ID', 
+      description: 'Admin: can access any seller. Seller: can only access own seller profile.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access own profile' }, 404: { description: 'Not found' } } 
+    },
+    put: { 
+      tags: ['Sellers'], 
+      summary: 'Update seller', 
+      description: 'Admin: can update any seller. Seller: can only update own profile.',
+      security: [{ bearerAuth: [] }], 
+      requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only update own profile' } } 
+    },
+    delete: { 
+      tags: ['Sellers'], 
+      summary: 'Delete seller', 
+      description: 'Admin: can delete any seller. Seller: can only delete own profile.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only delete own profile' } } 
+    },
   },
 
   // Businesses
   '/api/businesses': {
-    get: { tags: ['Businesses'], summary: 'List businesses', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
-    post: { tags: ['Businesses'], summary: 'Create business', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/BusinessCreate' } } } }, responses: { 201: { description: 'Created' } } },
+    get: { 
+      tags: ['Businesses'], 
+      summary: 'List businesses', 
+      description: 'Admin: sees all businesses. Seller: sees own businesses only.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' } } 
+    },
+    post: { 
+      tags: ['Businesses'], 
+      summary: 'Create business', 
+      description: 'Seller role required. Admin can create for any seller.',
+      security: [{ bearerAuth: [] }], 
+      requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/BusinessCreate' } } } }, 
+      responses: { 201: { description: 'Created' }, 403: { description: 'Forbidden - Seller role required' } } 
+    },
   },
   '/api/businesses/seller/{sellerId}': {
     parameters: [{ name: 'sellerId', in: 'path', required: true, schema: { type: 'string' } }],
-    get: { tags: ['Businesses'], summary: 'List businesses by seller', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Businesses'], 
+      summary: 'List businesses by seller', 
+      description: 'Admin: can see any seller\'s businesses. Seller: can only see own businesses.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only view own businesses' } } 
+    },
   },
   '/api/businesses/{id}': {
     parameters: [idParam],
-    get: { tags: ['Businesses'], summary: 'Get business', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
-    put: { tags: ['Businesses'], summary: 'Update business', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/BusinessUpdate' } } } }, responses: { 200: { description: 'OK' } } },
-    delete: { tags: ['Businesses'], summary: 'Delete business', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Businesses'], 
+      summary: 'Get business', 
+      description: 'Admin: can see any business. Seller: can only see own businesses.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only view own businesses' } } 
+    },
+    put: { 
+      tags: ['Businesses'], 
+      summary: 'Update business', 
+      description: 'Admin: can update any business. Seller: can only update own businesses.',
+      security: [{ bearerAuth: [] }], 
+      requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/BusinessUpdate' } } } }, 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only update own businesses' } } 
+    },
+    delete: { 
+      tags: ['Businesses'], 
+      summary: 'Delete business', 
+      description: 'Admin: can delete any business. Seller: can only delete own businesses.',
+      security: [{ bearerAuth: [] }], 
+      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only delete own businesses' } } 
+    },
   },
 
   // Site Details
@@ -249,11 +383,12 @@ const swaggerSpec = {
     { url: 'http://localhost:{port}', description: 'Local', variables: { port: { default: '3000' } } },
   ],
   tags: [
-    { name: 'Auth' },
+    { name: 'Auth', description: 'Authentication endpoints (Public - Register/Login)' },
+    { name: 'Admin', description: 'Admin-only endpoints for user management' },
     { name: 'Products' },
     { name: 'Categories' },
-    { name: 'Sellers' },
-    { name: 'Businesses' },
+    { name: 'Sellers', description: 'Seller profile management (Seller role required, Admin can access all)' },
+    { name: 'Businesses', description: 'Business management (Seller role required, Admin can access all)' },
     { name: 'SiteDetails' },
     { name: 'HeroSlides' },
     { name: 'Stories' },
@@ -272,6 +407,7 @@ const swaggerSpec = {
           password: { type: 'string', minLength: 6 },
         },
         required: ['email', 'password'],
+        description: 'Creates user with "visitor" role by default. After purchase, create seller profile to upgrade to "seller" role.',
       },
       AuthLoginRequest: {
         type: 'object',
@@ -280,6 +416,14 @@ const swaggerSpec = {
           password: { type: 'string' },
         },
         required: ['email', 'password'],
+      },
+      UserRoleUpdate: {
+        type: 'object',
+        properties: {
+          role: { type: 'string', enum: ['visitor', 'seller', 'admin'] },
+        },
+        required: ['role'],
+        description: 'Update user role. Admin only endpoint.',
       },
       ProductCreate: {
         type: 'object',
