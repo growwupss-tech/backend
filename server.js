@@ -25,6 +25,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/sellers', require('./routes/sellers'));
 app.use('/api/businesses', require('./routes/businesses'));
 app.use('/api/site-details', require('./routes/siteDetails'));

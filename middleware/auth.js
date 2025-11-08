@@ -33,23 +33,77 @@ const protect = async (req, res, next) => {
   }
 };
 
-// Check if user is a seller
-const isSeller = async (req, res, next) => {
-  if (!req.user || !req.user.seller_id) {
-    return res.status(403).json({ message: 'Access denied. Seller privileges required.' });
+// Check if user is an admin
+const isAdmin = async (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
+  next();
+};
+
+// Check if user is a seller (role-based)
+const isSeller = async (req, res, next) => {
+  if (!req.user) {
+    return res.status(403).json({ message: 'Access denied. Authentication required.' });
+  }
+  
+  // Admin can access seller routes
+  if (req.user.role === 'admin') {
+    return next();
+  }
+  
+  // Check if user is seller and has seller_id
+  if (req.user.role !== 'seller' || !req.user.seller_id) {
+    return res.status(403).json({ 
+      message: 'Access denied. Seller privileges required. Please upgrade your account.' 
+    });
+  }
+  
   req.seller = req.user.seller_id;
   next();
+};
+
+// Check if user is a visitor
+const isVisitor = async (req, res, next) => {
+  if (!req.user || req.user.role !== 'visitor') {
+    return res.status(403).json({ message: 'Access denied. Visitor access only.' });
+  }
+  next();
+};
+
+// Check if user owns the resource (for sellers, only their own data)
+const ownsResource = async (req, res, next) => {
+  // Admin can access all resources
+  if (req.user.role === 'admin') {
+    return next();
+  }
+  
+  // Sellers can only access their own resources
+  if (req.user.role === 'seller' && req.user.seller_id) {
+    return next();
+  }
+  
+  return res.status(403).json({ message: 'Access denied. You can only access your own resources.' });
 };
 
 // Check if user owns the business
 const ownsBusiness = async (req, res, next) => {
   try {
     const Business = require('../models/Business');
-    const businessId = req.params.businessId || req.body.business_id || req.query.business_id;
+    const businessId = req.params.businessId || req.params.id || req.body.business_id || req.query.business_id;
 
     if (!businessId) {
       return res.status(400).json({ message: 'Business ID is required' });
+    }
+
+    // Admin can access all businesses
+    if (req.user.role === 'admin') {
+      const business = await Business.findById(businessId);
+      if (!business) {
+        return res.status(404).json({ message: 'Business not found' });
+      }
+      req.business = business;
+      return next();
     }
 
     if (!req.user || !req.user.seller_id) {
@@ -63,7 +117,8 @@ const ownsBusiness = async (req, res, next) => {
     }
 
     // Check if business belongs to the seller
-    if (business.seller_id.toString() !== req.user.seller_id._id.toString()) {
+    const sellerId = req.user.seller_id._id || req.user.seller_id;
+    if (business.seller_id.toString() !== sellerId.toString()) {
       return res.status(403).json({ message: 'Access denied. You do not own this business.' });
     }
 
@@ -75,5 +130,5 @@ const ownsBusiness = async (req, res, next) => {
   }
 };
 
-module.exports = { protect, isSeller, ownsBusiness };
+module.exports = { protect, isAdmin, isSeller, isVisitor, ownsResource, ownsBusiness };
 

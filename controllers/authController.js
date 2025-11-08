@@ -25,6 +25,7 @@ const register = async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
+        role: user.role,
         seller_id: user.seller_id,
       },
     });
@@ -70,6 +71,7 @@ const login = async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
+        role: user.role,
         seller_id: user.seller_id,
       },
     });
@@ -84,7 +86,7 @@ const login = async (req, res) => {
 // @access  Private
 const getMe = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('seller_id');
+    const user = await User.findById(req.user._id).select('-password').populate('seller_id');
 
     res.status(200).json({
       success: true,

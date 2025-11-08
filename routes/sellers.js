@@ -7,23 +7,23 @@ const {
   updateSeller,
   deleteSeller,
 } = require('../controllers/sellerController');
-const { protect } = require('../middleware/auth');
+const { protect, isAdmin, isSeller } = require('../middleware/auth');
 
-// Get all sellers (admin only - can be enhanced later)
+// Get all sellers (admin can see all, seller can see own)
 router.get('/', protect, getSellers);
 
-// Create seller profile for authenticated user
+// Create seller profile (visitors can create, which upgrades them to seller)
 router.post('/', protect, createSeller);
 
 // Get/update/delete own seller profile (must be before /:id route)
-router.get('/me', protect, getSeller);
-router.put('/me', protect, updateSeller);
-router.delete('/me', protect, deleteSeller);
+router.get('/me', protect, isSeller, getSeller);
+router.put('/me', protect, isSeller, updateSeller);
+router.delete('/me', protect, isSeller, deleteSeller);
 
-// Get/update/delete specific seller by ID
-router.get('/:id', protect, getSeller);
-router.put('/:id', protect, updateSeller);
-router.delete('/:id', protect, deleteSeller);
+// Get/update/delete specific seller by ID (admin can access any, seller can only access own)
+router.get('/:id', protect, isSeller, getSeller);
+router.put('/:id', protect, isSeller, updateSeller);
+router.delete('/:id', protect, isSeller, deleteSeller);
 
 module.exports = router;
 

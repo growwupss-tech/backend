@@ -20,6 +20,12 @@ const UserSchema = new mongoose.Schema({
     minlength: 6,
     select: false, // Don't return password by default
   },
+  role: {
+    type: String,
+    enum: ['visitor', 'seller', 'admin'],
+    default: 'visitor',
+    required: true,
+  },
   seller_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Seller',
