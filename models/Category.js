@@ -7,6 +7,11 @@ const CategorySchema = new mongoose.Schema({
     trim: true,
     unique: true,
   },
+  seller_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Seller',
+    required: true,
+  },
 }, {
   timestamps: true,
 });
