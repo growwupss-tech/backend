@@ -180,10 +180,10 @@ const updateProduct = async (req, res) => {
     }
 
     // Determine which old images to delete
-    // If imagesToKeep is not provided at all, keep all existing images
-    // If it's provided (even as empty array), only keep the specified images
-    const imagesToKeep = req.body.hasOwnProperty('imagesToKeep') 
-      ? (req.body.imagesToKeep || [])
+    // If imagesToKeep is not in request at all -> keep all existing images
+    // If imagesToKeep is in request (even as empty array) -> only keep specified images
+    const imagesToKeep = 'imagesToKeep' in req.body
+      ? (Array.isArray(req.body.imagesToKeep) ? req.body.imagesToKeep : [])
       : existingProduct.images;
     
     // Find images that aren't in the keep list
