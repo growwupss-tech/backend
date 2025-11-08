@@ -13,8 +13,15 @@ const getSellers = async (req, res) => {
     }
     
     // Sellers can only see their own seller profile
-    if (req.user.role === 'seller' && req.user.seller_id) {
-      const seller = await Seller.findById(req.user.seller_id);
+    if (req.user.role === 'seller') {
+      // Get seller_id, handling both populated object and ObjectId
+      const sellerId = req.user.seller_id?._id || req.user.seller_id;
+      
+      if (!sellerId) {
+        return res.status(404).json({ message: 'Seller profile not found' });
+      }
+      
+      const seller = await Seller.findById(sellerId);
       if (!seller) {
         return res.status(404).json({ message: 'Seller profile not found' });
       }
@@ -23,42 +30,34 @@ const getSellers = async (req, res) => {
     
     return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   } catch (error) {
+    console.error('Error in getSellers:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
-// @desc    Get single seller or current user's seller
-// @route   GET /api/sellers/:id or GET /api/sellers/me
+// @desc    Get single seller by ID
+// @route   GET /api/sellers/:id
 // @access  Private - Admin can access any, Seller can only access own
 const getSeller = async (req, res) => {
   try {
     let seller;
-    const sellerId = req.params.id === 'me' ? req.user.seller_id : req.params.id;
 
-    // If requesting own seller profile
-    if (req.params.id === 'me') {
-      if (!req.user.seller_id) {
-        return res.status(404).json({ message: 'You do not have a seller profile yet' });
-      }
-      seller = await Seller.findById(req.user.seller_id);
+    // Admin can access any seller
+    if (req.user.role === 'admin') {
+      seller = await Seller.findById(req.params.id);
     } else {
-      // Admin can access any seller
-      if (req.user.role === 'admin') {
-        seller = await Seller.findById(req.params.id);
-      } else {
-        // Sellers can only access their own seller profile
-        if (req.user.role !== 'seller' || !req.user.seller_id) {
-          return res.status(403).json({ message: 'Access denied. You can only access your own seller profile.' });
-        }
-        
-        // Check if requesting own seller
-        const userSellerId = req.user.seller_id._id || req.user.seller_id;
-        if (req.params.id.toString() !== userSellerId.toString()) {
-          return res.status(403).json({ message: 'Access denied. You can only access your own seller profile.' });
-        }
-        
-        seller = await Seller.findById(req.params.id);
+      // Sellers can only access their own seller profile
+      if (req.user.role !== 'seller' || !req.user.seller_id) {
+        return res.status(403).json({ message: 'Access denied. You can only access your own seller profile.' });
       }
+      
+      // Check if requesting own seller
+      const userSellerId = req.user.seller_id?._id || req.user.seller_id;
+      if (!userSellerId || req.params.id.toString() !== userSellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only access your own seller profile.' });
+      }
+      
+      seller = await Seller.findById(req.params.id);
     }
 
     if (!seller) {
@@ -67,6 +66,7 @@ const getSeller = async (req, res) => {
 
     res.status(200).json({ success: true, data: seller });
   } catch (error) {
+    console.error('Error in getSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -111,34 +111,26 @@ const createSeller = async (req, res) => {
 };
 
 // @desc    Update seller (admin can update any, seller can only update own)
-// @route   PUT /api/sellers/:id or PUT /api/sellers/me
+// @route   PUT /api/sellers/:id
 // @access  Private
 const updateSeller = async (req, res) => {
   try {
-    let sellerId = req.params.id;
+    let sellerId;
 
-    // If updating own seller profile
-    if (req.params.id === 'me') {
-      if (!req.user.seller_id) {
-        return res.status(404).json({ message: 'You do not have a seller profile yet' });
-      }
-      sellerId = req.user.seller_id;
+    // Admin can update any seller
+    if (req.user.role === 'admin') {
+      sellerId = req.params.id;
     } else {
-      // Admin can update any seller
-      if (req.user.role === 'admin') {
-        sellerId = req.params.id;
-      } else {
-        // Sellers can only update their own seller profile
-        if (req.user.role !== 'seller' || !req.user.seller_id) {
-          return res.status(403).json({ message: 'Access denied. You can only update your own seller profile.' });
-        }
-        
-        const userSellerId = req.user.seller_id._id || req.user.seller_id;
-        if (req.params.id.toString() !== userSellerId.toString()) {
-          return res.status(403).json({ message: 'Access denied. You can only update your own seller profile.' });
-        }
-        sellerId = req.params.id;
+      // Sellers can only update their own seller profile
+      if (req.user.role !== 'seller' || !req.user.seller_id) {
+        return res.status(403).json({ message: 'Access denied. You can only update your own seller profile.' });
       }
+      
+      const userSellerId = req.user.seller_id?._id || req.user.seller_id;
+      if (!userSellerId || req.params.id.toString() !== userSellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only update your own seller profile.' });
+      }
+      sellerId = req.params.id;
     }
 
     const seller = await Seller.findByIdAndUpdate(sellerId, req.body, {
@@ -152,39 +144,32 @@ const updateSeller = async (req, res) => {
 
     res.status(200).json({ success: true, data: seller });
   } catch (error) {
+    console.error('Error in updateSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 
 // @desc    Delete seller (admin can delete any, seller can only delete own)
-// @route   DELETE /api/sellers/:id or DELETE /api/sellers/me
+// @route   DELETE /api/sellers/:id
 // @access  Private
 const deleteSeller = async (req, res) => {
   try {
-    let sellerId = req.params.id;
+    let sellerId;
 
-    // If deleting own seller profile
-    if (req.params.id === 'me') {
-      if (!req.user.seller_id) {
-        return res.status(404).json({ message: 'You do not have a seller profile yet' });
-      }
-      sellerId = req.user.seller_id;
+    // Admin can delete any seller
+    if (req.user.role === 'admin') {
+      sellerId = req.params.id;
     } else {
-      // Admin can delete any seller
-      if (req.user.role === 'admin') {
-        sellerId = req.params.id;
-      } else {
-        // Sellers can only delete their own seller profile
-        if (req.user.role !== 'seller' || !req.user.seller_id) {
-          return res.status(403).json({ message: 'Access denied. You can only delete your own seller profile.' });
-        }
-        
-        const userSellerId = req.user.seller_id._id || req.user.seller_id;
-        if (req.params.id.toString() !== userSellerId.toString()) {
-          return res.status(403).json({ message: 'Access denied. You can only delete your own seller profile.' });
-        }
-        sellerId = req.params.id;
+      // Sellers can only delete their own seller profile
+      if (req.user.role !== 'seller' || !req.user.seller_id) {
+        return res.status(403).json({ message: 'Access denied. You can only delete your own seller profile.' });
       }
+      
+      const userSellerId = req.user.seller_id?._id || req.user.seller_id;
+      if (!userSellerId || req.params.id.toString() !== userSellerId.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only delete your own seller profile.' });
+      }
+      sellerId = req.params.id;
     }
 
     const seller = await Seller.findById(sellerId);
@@ -195,7 +180,7 @@ const deleteSeller = async (req, res) => {
 
     // Remove seller_id reference from user and downgrade role to visitor
     const userSellerId = req.user.seller_id?._id || req.user.seller_id;
-    if (userSellerId && userSellerId.toString() === sellerId.toString()) {
+    if (userSellerId && sellerId && userSellerId.toString() === sellerId.toString()) {
       req.user.seller_id = null;
       if (req.user.role === 'seller') {
         req.user.role = 'visitor';
@@ -206,6 +191,7 @@ const deleteSeller = async (req, res) => {
     await seller.deleteOne();
     res.status(200).json({ success: true, data: {}, message: 'Seller profile deleted' });
   } catch (error) {
+    console.error('Error in deleteSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

@@ -88,12 +88,9 @@ npm run dev
 ### Sellers
 
 - `GET /api/sellers` - Get all sellers (Admin: all, Seller: own only)
-- `GET /api/sellers/me` - Get current user's seller profile (Seller role required)
 - `GET /api/sellers/:id` - Get seller by ID (Admin: any, Seller: own only)
 - `POST /api/sellers` - Create seller profile (Upgrades visitor to seller role)
-- `PUT /api/sellers/me` - Update own seller profile (Seller role required)
 - `PUT /api/sellers/:id` - Update seller (Admin: any, Seller: own only)
-- `DELETE /api/sellers/me` - Delete own seller profile (Seller role required, downgrades to visitor)
 - `DELETE /api/sellers/:id` - Delete seller (Admin: any, Seller: own only)
 
 ### Businesses

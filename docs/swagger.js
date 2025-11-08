@@ -204,30 +204,6 @@ const buildPaths = () => ({
       responses: { 201: { description: 'Created' }, 400: { description: 'User already has seller profile' }, 403: { description: 'Forbidden' } } 
     },
   },
-  '/api/sellers/me': {
-    get: { 
-      tags: ['Sellers'], 
-      summary: 'Get current user\'s seller profile', 
-      description: 'Seller role required. Admin can also access.',
-      security: [{ bearerAuth: [] }], 
-      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
-    },
-    put: { 
-      tags: ['Sellers'], 
-      summary: 'Update current user\'s seller profile', 
-      description: 'Seller role required. Admin can also access.',
-      security: [{ bearerAuth: [] }], 
-      requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/SellerUpdate' } } } }, 
-      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
-    },
-    delete: { 
-      tags: ['Sellers'], 
-      summary: 'Delete current user\'s seller profile', 
-      description: 'Seller role required. Admin can also access. Downgrades role to visitor.',
-      security: [{ bearerAuth: [] }], 
-      responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Seller role required' }, 404: { description: 'No seller profile found' } } 
-    },
-  },
   '/api/sellers/{id}': {
     parameters: [idParam],
     get: { 
