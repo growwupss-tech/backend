@@ -44,7 +44,6 @@ const createHeroSlide = async (req, res) => {
         try {
           await deleteFromCloudinary(req.file.path);
         } catch (deleteError) {
-          console.error('Error cleaning up uploaded file:', deleteError);
         }
       }
       return res.status(400).json({ message: 'Please provide an image' });
@@ -83,7 +82,6 @@ const updateHeroSlide = async (req, res) => {
         try {
           await deleteFromCloudinary(req.file.path);
         } catch (deleteError) {
-          console.error('Error cleaning up uploaded file:', deleteError);
         }
       }
       return res.status(404).json({ message: 'Hero slide not found' });
@@ -95,7 +93,6 @@ const updateHeroSlide = async (req, res) => {
         try {
           await deleteFromCloudinary(existingHeroSlide.image);
         } catch (deleteError) {
-          console.error('Error deleting old image:', deleteError);
         }
       }
     }
@@ -143,7 +140,6 @@ const deleteHeroSlide = async (req, res) => {
       try {
         await deleteFromCloudinary(heroSlide.image);
       } catch (deleteError) {
-        console.error('Error deleting image from Cloudinary:', deleteError);
         // Continue with deletion even if Cloudinary deletion fails
       }
     }

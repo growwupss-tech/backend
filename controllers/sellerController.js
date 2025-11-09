@@ -30,7 +30,6 @@ const getSellers = async (req, res) => {
     
     return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   } catch (error) {
-    console.error('Error in getSellers:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -66,7 +65,6 @@ const getSeller = async (req, res) => {
 
     res.status(200).json({ success: true, data: seller });
   } catch (error) {
-    console.error('Error in getSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -144,7 +142,6 @@ const updateSeller = async (req, res) => {
 
     res.status(200).json({ success: true, data: seller });
   } catch (error) {
-    console.error('Error in updateSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -191,7 +188,6 @@ const deleteSeller = async (req, res) => {
     await seller.deleteOne();
     res.status(200).json({ success: true, data: {}, message: 'Seller profile deleted' });
   } catch (error) {
-    console.error('Error in deleteSeller:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

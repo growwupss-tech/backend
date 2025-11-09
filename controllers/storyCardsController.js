@@ -44,7 +44,6 @@ const createStoryCard = async (req, res) => {
         try {
           await deleteFromCloudinary(req.file.path);
         } catch (deleteError) {
-          console.error('Error cleaning up uploaded file:', deleteError);
         }
       }
       return res.status(400).json({ message: 'Please provide a story card image' });
@@ -83,7 +82,6 @@ const updateStoryCard = async (req, res) => {
         try {
           await deleteFromCloudinary(req.file.path);
         } catch (deleteError) {
-          console.error('Error cleaning up uploaded file:', deleteError);
         }
       }
       return res.status(404).json({ message: 'Story card not found' });
@@ -95,7 +93,6 @@ const updateStoryCard = async (req, res) => {
         try {
           await deleteFromCloudinary(existingStoryCard.story_card_image);
         } catch (deleteError) {
-          console.error('Error deleting old image:', deleteError);
         }
       }
     }
@@ -145,7 +142,6 @@ const deleteStoryCard = async (req, res) => {
       try {
         await deleteFromCloudinary(storyCard.story_card_image);
       } catch (deleteError) {
-        console.error('Error deleting image from Cloudinary:', deleteError);
         // Continue with deletion even if Cloudinary deletion fails
       }
     }

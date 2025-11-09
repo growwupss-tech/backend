@@ -58,7 +58,6 @@ const register = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Email already exists' });
     }
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -110,7 +109,6 @@ const verifyEmailOTP = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -154,7 +152,6 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -273,7 +270,6 @@ const verifyPhoneOTP = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -338,7 +334,6 @@ const googleAuth = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -390,7 +385,6 @@ const resendOTP = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
@@ -409,7 +403,6 @@ const getMe = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

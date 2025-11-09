@@ -688,7 +688,10 @@ const swaggerSpec = {
     description: 'Interactive API documentation for Site Snap backend',
   },
   servers: [
-    { url: 'http://localhost:{port}', description: 'Local', variables: { port: { default: '3000' } } },
+    { 
+      url: 'http://localhost:3000', 
+      description: 'Local Development Server' 
+    },
   ],
   tags: [
     { name: 'Auth', description: 'Authentication endpoints (Public - Register/Login)' },

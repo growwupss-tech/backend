@@ -47,18 +47,22 @@ CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 # Google OAuth (Optional - for Google Sign-In)
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 
-# OTP Services (Optional - for production SMS/Email OTP delivery)
-# Currently, OTP codes are logged to console. Uncomment and configure for production:
+# Email OTP Service (Required for email OTP to work)
+# For Gmail, you need to create an App Password (not your regular password)
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-gmail-app-password
+EMAIL_SERVICE=gmail
 
-# For SMS OTP (Twilio example):
+# For custom SMTP (optional - if not using Gmail):
+# EMAIL_SERVICE=smtp
+# SMTP_HOST=smtp.example.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+
+# For SMS OTP (Optional - for phone OTP):
 # TWILIO_ACCOUNT_SID=your-twilio-account-sid
 # TWILIO_AUTH_TOKEN=your-twilio-auth-token
 # TWILIO_PHONE_NUMBER=+1234567890
-
-# For Email OTP (Nodemailer/Gmail example):
-# EMAIL_USER=your-email@gmail.com
-# EMAIL_PASS=your-app-specific-password
-# EMAIL_SERVICE=gmail
 ```
 
 **To get Cloudinary credentials:**
@@ -73,13 +77,34 @@ GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 4. Go to Credentials → Create Credentials → OAuth 2.0 Client ID
 5. Copy the Client ID
 
-**Note on OTP Services:**
-- **Currently, OTP verification works without any environment variables** - OTP codes are logged to the console for development/testing
-- Check your server console/logs to see the OTP codes when testing
-- For production, you need to:
-  1. Uncomment and configure the SMS/Email service code in `utils/otpService.js`
-  2. Add the corresponding environment variables (see .env example above)
-  3. Install required packages (e.g., `npm install twilio` for SMS or `npm install nodemailer` for email)
+**Email OTP Setup (Required for email verification):**
+
+To receive OTP emails, you need to configure email service in your `.env` file:
+
+**For Gmail (Recommended for development):**
+1. Go to your Google Account: https://myaccount.google.com/
+2. Navigate to: Security → 2-Step Verification (enable it if not already enabled)
+3. Go to: Security → App passwords
+4. Create a new App Password:
+   - Select "Mail" as the app
+   - Select "Other" as the device and name it "Site Snap Backend"
+   - Click "Generate"
+   - Copy the 16-character password (no spaces)
+5. Add to `.env`:
+   ```env
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-16-char-app-password
+   EMAIL_SERVICE=gmail
+   ```
+
+**For Other Email Services:**
+- **Outlook/Hotmail**: Use `EMAIL_SERVICE=outlook`
+- **Yahoo**: Use `EMAIL_SERVICE=yahoo`
+- **Custom SMTP**: Use `EMAIL_SERVICE=smtp` and configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`
+
+**Note:**
+- If `EMAIL_USER` and `EMAIL_PASS` are not set, OTP codes will be logged to console only
+- For production, consider using professional email services like SendGrid, AWS SES, or Mailgun
 
 4. Start MongoDB (if running locally):
 ```bash

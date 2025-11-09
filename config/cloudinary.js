@@ -88,7 +88,6 @@ const deleteFromCloudinary = async (urlOrPublicId) => {
           }
         }
       } catch (parseError) {
-        console.error('Error parsing Cloudinary URL:', parseError);
         // If parsing fails, try to extract filename directly
         const lastSlash = urlOrPublicId.lastIndexOf('/');
         const lastDot = urlOrPublicId.lastIndexOf('.');
@@ -123,7 +122,6 @@ const deleteFromCloudinary = async (urlOrPublicId) => {
     
     return result;
   } catch (error) {
-    console.error('Error deleting from Cloudinary:', error);
     // Don't throw - allow the operation to continue even if Cloudinary delete fails
     return { result: 'error', error: error.message };
   }
@@ -137,14 +135,12 @@ const deleteMultipleFromCloudinary = async (publicIds) => {
         try {
           return await deleteFromCloudinary(publicId);
         } catch (error) {
-          console.error(`Error deleting ${publicId}:`, error);
           return null;
         }
       })
     );
     return results;
   } catch (error) {
-    console.error('Error deleting multiple files:', error);
     throw error;
   }
 };
@@ -159,7 +155,6 @@ const extractPublicId = (url) => {
     const publicId = `site-snap/${filename.split('.')[0]}`;
     return publicId;
   } catch (error) {
-    console.error('Error extracting public_id:', error);
     return null;
   }
 };

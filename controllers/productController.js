@@ -148,7 +148,6 @@ const createProduct = async (req, res) => {
       try {
         await deleteMultipleFromCloudinary(req.files.map(f => f.path));
       } catch (deleteError) {
-        console.error('Error cleaning up uploaded files:', deleteError);
       }
     }
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -168,7 +167,6 @@ const updateProduct = async (req, res) => {
         try {
           await deleteMultipleFromCloudinary(req.files.map(f => f.path));
         } catch (deleteError) {
-          console.error('Error cleaning up uploaded files:', deleteError);
         }
       }
       return res.status(404).json({ message: 'Product not found' });
@@ -184,7 +182,6 @@ const updateProduct = async (req, res) => {
           try {
             await deleteMultipleFromCloudinary(req.files.map(f => f.path));
           } catch (deleteError) {
-            console.error('Error cleaning up uploaded files:', deleteError);
           }
         }
         return res.status(403).json({ message: 'Access denied. You can only update your own products.' });
@@ -233,10 +230,8 @@ const updateProduct = async (req, res) => {
     // Delete unmentioned images from Cloudinary
     if (imagesToDelete.length > 0) {
       try {
-        console.log('Deleting images from Cloudinary:', imagesToDelete);
         await deleteMultipleFromCloudinary(imagesToDelete);
       } catch (deleteError) {
-        console.error('Error deleting images from Cloudinary:', deleteError);
       }
     }
 
@@ -265,7 +260,6 @@ const updateProduct = async (req, res) => {
       try {
         await deleteMultipleFromCloudinary(req.files.map(f => f.path));
       } catch (deleteError) {
-        console.error('Error cleaning up uploaded files:', deleteError);
       }
     }
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -298,7 +292,6 @@ const deleteProduct = async (req, res) => {
       try {
         await deleteMultipleFromCloudinary(product.images);
       } catch (deleteError) {
-        console.error('Error deleting images from Cloudinary:', deleteError);
         // Continue with deletion even if Cloudinary deletion fails
       }
     }

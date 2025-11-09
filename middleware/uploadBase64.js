@@ -50,7 +50,6 @@ const uploadToCloudinary = async (buffer, mimetype) => {
       resource_type: result.resource_type,
     };
   } catch (error) {
-    console.error('Error uploading to Cloudinary:', error);
     throw error;
   }
 };
