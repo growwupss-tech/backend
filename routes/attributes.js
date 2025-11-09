@@ -7,11 +7,11 @@ const {
   updateAttribute,
   deleteAttribute,
 } = require('../controllers/attributesController');
-const { protect, optionalProtect, isSeller } = require('../middleware/auth');
+const { protect, isSeller } = require('../middleware/auth');
 
-// Public routes (with optional auth for filtering)
-router.get('/', optionalProtect, getAttributes);
-router.get('/:id', optionalProtect, getAttribute);
+// Protected routes - require authentication
+router.get('/', protect, getAttributes);
+router.get('/:id', protect, getAttribute);
 
 // Protected routes
 router.post('/', protect, isSeller, createAttribute);

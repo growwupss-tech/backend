@@ -10,13 +10,13 @@ const getProducts = async (req, res) => {
     let query = {};
 
     // Admin can see all products, Seller can only see their own
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       if (sellerId) {
         query.seller_id = sellerId;
       }
     }
-    // If admin or public, no seller_id filter
+    // Admin sees all products (no filter)
 
     if (is_visible !== undefined) {
       query.is_visible = is_visible === 'true';
@@ -50,13 +50,14 @@ const getProduct = async (req, res) => {
     }
 
     // Check access: Admin can access any, Seller can only access own
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       const productSellerId = product.seller_id?._id || product.seller_id;
       if (sellerId.toString() !== productSellerId.toString()) {
         return res.status(403).json({ message: 'Access denied. You can only access your own products.' });
       }
     }
+    // Admin can access any product
 
     // Increment visits
     product.visits += 1;
@@ -98,6 +99,26 @@ const createProduct = async (req, res) => {
         }
       }
       // Admin can create products for any seller
+    }
+
+    // Parse attribute_ids if it's a string
+    if (req.body.attribute_ids !== undefined) {
+      if (typeof req.body.attribute_ids === 'string') {
+        try {
+          // Try to parse if it's a JSON string
+          req.body.attribute_ids = JSON.parse(req.body.attribute_ids);
+        } catch (e) {
+          // If parsing fails, treat as single value or split by comma
+          req.body.attribute_ids = req.body.attribute_ids.split(',').map(id => id.trim()).filter(id => id);
+        }
+      }
+      // Ensure it's an array and filter out empty values
+      if (!Array.isArray(req.body.attribute_ids)) {
+        req.body.attribute_ids = [];
+      }
+      req.body.attribute_ids = req.body.attribute_ids.filter(id => id && id.toString().trim() !== '');
+    } else {
+      req.body.attribute_ids = [];
     }
 
     // Get URLs from uploaded files that were processed by uploadBase64 middleware
@@ -170,6 +191,24 @@ const updateProduct = async (req, res) => {
       }
     }
     // Admin can update any product
+
+    // Parse attribute_ids if it's a string
+    if (req.body.attribute_ids !== undefined) {
+      if (typeof req.body.attribute_ids === 'string') {
+        try {
+          // Try to parse if it's a JSON string
+          req.body.attribute_ids = JSON.parse(req.body.attribute_ids);
+        } catch (e) {
+          // If parsing fails, treat as single value or split by comma
+          req.body.attribute_ids = req.body.attribute_ids.split(',').map(id => id.trim()).filter(id => id);
+        }
+      }
+      // Ensure it's an array and filter out empty values
+      if (!Array.isArray(req.body.attribute_ids)) {
+        req.body.attribute_ids = [];
+      }
+      req.body.attribute_ids = req.body.attribute_ids.filter(id => id && id.toString().trim() !== '');
+    }
 
     // Handle new image uploads
     const newImageUrls = [];

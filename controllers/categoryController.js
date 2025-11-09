@@ -8,11 +8,11 @@ const getCategories = async (req, res) => {
     let query = {};
 
     // Admin can see all categories, Seller can only see their own
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       query.seller_id = sellerId;
     }
-    // If admin or public, no seller_id filter
+    // Admin sees all categories (no filter)
 
     const categories = await Category.find(query);
     res.status(200).json({ success: true, count: categories.length, data: categories });
@@ -33,13 +33,14 @@ const getCategory = async (req, res) => {
     }
 
     // Check access: Admin can access any, Seller can only access own
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       const categorySellerId = category.seller_id?._id || category.seller_id;
       if (sellerId.toString() !== categorySellerId.toString()) {
         return res.status(403).json({ message: 'Access denied. You can only access your own categories.' });
       }
     }
+    // Admin can access any category
 
     res.status(200).json({ success: true, data: category });
   } catch (error) {

@@ -10,9 +10,9 @@ const {
 const { protect, isSeller } = require('../middleware/auth');
 const { uploadSingle } = require('../middleware/upload');
 
-// Public routes
-router.get('/', getHeroSlides);
-router.get('/:id', getHeroSlide);
+// Protected routes - require authentication
+router.get('/', protect, getHeroSlides);
+router.get('/:id', protect, getHeroSlide);
 
 // Protected routes with file upload
 router.post('/', protect, isSeller, uploadSingle('image'), createHeroSlide);

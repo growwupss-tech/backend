@@ -11,9 +11,9 @@ const {
 } = require('../controllers/storyController');
 const { protect, isSeller } = require('../middleware/auth');
 
-// Public routes
-router.get('/', getStories);
-router.get('/:id', getStory);
+// Protected routes - require authentication
+router.get('/', protect, getStories);
+router.get('/:id', protect, getStory);
 
 // Protected routes
 router.post('/', protect, isSeller, createStory);

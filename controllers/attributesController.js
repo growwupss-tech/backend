@@ -9,7 +9,7 @@ const getAttributes = async (req, res) => {
     let attributes;
 
     // Admin can see all attributes, Seller can only see attributes from their products
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       
       // Find all products belonging to this seller
@@ -58,7 +58,7 @@ const getAttribute = async (req, res) => {
     }
 
     // Check access: Admin can access any, Seller can only access attributes from their products
-    if (req.user && req.user.role === 'seller' && req.user.seller_id) {
+    if (req.user.role === 'seller' && req.user.seller_id) {
       const sellerId = req.user.seller_id?._id || req.user.seller_id;
       
       // Check if this attribute is used in any of the seller's products

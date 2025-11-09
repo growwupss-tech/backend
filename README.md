@@ -43,12 +43,43 @@ NODE_ENV=development
 CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+
+# Google OAuth (Optional - for Google Sign-In)
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+
+# OTP Services (Optional - for production SMS/Email OTP delivery)
+# Currently, OTP codes are logged to console. Uncomment and configure for production:
+
+# For SMS OTP (Twilio example):
+# TWILIO_ACCOUNT_SID=your-twilio-account-sid
+# TWILIO_AUTH_TOKEN=your-twilio-auth-token
+# TWILIO_PHONE_NUMBER=+1234567890
+
+# For Email OTP (Nodemailer/Gmail example):
+# EMAIL_USER=your-email@gmail.com
+# EMAIL_PASS=your-app-specific-password
+# EMAIL_SERVICE=gmail
 ```
 
 **To get Cloudinary credentials:**
 1. Sign up at [cloudinary.com](https://cloudinary.com)
 2. Go to Dashboard → Settings
 3. Copy your Cloud Name, API Key, and API Secret
+
+**To get Google OAuth credentials:**
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable Google+ API
+4. Go to Credentials → Create Credentials → OAuth 2.0 Client ID
+5. Copy the Client ID
+
+**Note on OTP Services:**
+- **Currently, OTP verification works without any environment variables** - OTP codes are logged to the console for development/testing
+- Check your server console/logs to see the OTP codes when testing
+- For production, you need to:
+  1. Uncomment and configure the SMS/Email service code in `utils/otpService.js`
+  2. Add the corresponding environment variables (see .env example above)
+  3. Install required packages (e.g., `npm install twilio` for SMS or `npm install nodemailer` for email)
 
 4. Start MongoDB (if running locally):
 ```bash
@@ -74,8 +105,22 @@ npm run dev
 
 ### Authentication
 
-- `POST /api/auth/register` - Register a new user (Public - Creates visitor role)
-- `POST /api/auth/login` - Login user (Public)
+The API supports three authentication methods:
+
+#### 1. Email/Password Authentication
+- `POST /api/auth/register` - Register with email and password (sends OTP to email)
+- `POST /api/auth/verify-email-otp` - Verify email OTP to complete registration
+- `POST /api/auth/login` - Login with email and password
+
+#### 2. Phone Number Authentication (with OTP)
+- `POST /api/auth/phone/send-otp` - Send OTP to phone number (requires email for signup)
+- `POST /api/auth/phone/verify-otp` - Verify phone OTP to complete registration/login
+
+#### 3. Google OAuth Authentication
+- `POST /api/auth/google` - Login/Register with Google (requires Google ID token)
+
+#### Other Endpoints
+- `POST /api/auth/resend-otp` - Resend OTP to email or phone
 - `GET /api/auth/me` - Get current user (Protected)
 
 ### Admin (Admin Role Required)

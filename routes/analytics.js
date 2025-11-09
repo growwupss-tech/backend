@@ -20,8 +20,8 @@ router
   .put(protect, isSeller, updateAnalytic)
   .delete(protect, isSeller, deleteAnalytic);
 
-router.put('/:id/views', incrementViews);
-router.put('/:id/clicks', incrementClicks);
+router.put('/:id/views', protect, incrementViews);
+router.put('/:id/clicks', protect, incrementClicks);
 
 module.exports = router;
 

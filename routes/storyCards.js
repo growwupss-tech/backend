@@ -10,9 +10,9 @@ const {
 const { protect, isSeller } = require('../middleware/auth');
 const { uploadSingle } = require('../middleware/upload');
 
-// Public routes
-router.get('/', getStoryCards);
-router.get('/:id', getStoryCard);
+// Protected routes - require authentication
+router.get('/', protect, getStoryCards);
+router.get('/:id', protect, getStoryCard);
 
 // Protected routes with file upload
 router.post('/', protect, isSeller, uploadSingle('story_card_image'), createStoryCard);

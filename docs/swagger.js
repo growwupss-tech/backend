@@ -19,34 +19,200 @@ const buildPaths = () => ({
   '/api/auth/register': {
     post: {
       tags: ['Auth'],
-      summary: 'Register a new user with email and password (Creates visitor role by default)',
-      description: 'Public endpoint. New users are created with "visitor" role. After purchase, they can create a seller profile to upgrade to "seller" role.',
+      summary: 'Register a new user with email and password (sends OTP)',
+      description: 'Public endpoint. Creates user with "visitor" role and sends OTP to email. User must verify OTP using /api/auth/verify-email-otp to complete registration.',
       requestBody: {
         required: true,
         content: {
           'application/json': { schema: { $ref: '#/components/schemas/AuthRegisterRequest' } },
         },
       },
-      responses: { 201: { description: 'Created' }, 400: { description: 'Bad request' } },
+      responses: { 
+        201: { 
+          description: 'OTP sent to email',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean' },
+                  message: { type: 'string', example: 'OTP sent to your email. Please verify to complete registration.' },
+                  userId: { type: 'string' },
+                },
+              },
+            },
+          },
+        }, 
+        400: { description: 'Bad request' } 
+      },
+    },
+  },
+  '/api/auth/verify-email-otp': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Verify email OTP and complete registration',
+      description: 'Public endpoint. Verifies the OTP sent to email and completes user registration. Returns JWT token.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/VerifyEmailOTPRequest' } },
+        },
+      },
+      responses: { 
+        200: { 
+          description: 'Email verified successfully',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthResponse' },
+            },
+          },
+        }, 
+        400: { description: 'Invalid or expired OTP' },
+        404: { description: 'User not found' }
+      },
     },
   },
   '/api/auth/login': {
     post: {
       tags: ['Auth'],
       summary: 'Login with email and password',
+      description: 'Public endpoint. Login for users who have completed email/password registration.',
       requestBody: {
         required: true,
         content: {
           'application/json': { schema: { $ref: '#/components/schemas/AuthLoginRequest' } },
         },
       },
-      responses: { 200: { description: 'OK' }, 401: { description: 'Invalid credentials' } },
+      responses: { 
+        200: { 
+          description: 'Login successful',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthResponse' },
+            },
+          },
+        }, 
+        401: { description: 'Invalid credentials' } 
+      },
+    },
+  },
+  '/api/auth/phone/send-otp': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Send OTP to phone number (for signup/login)',
+      description: 'Public endpoint. Sends OTP to phone number. Email is required for phone signup. If user exists, updates OTP. If new user, creates account with "visitor" role.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/PhoneSendOTPRequest' } },
+        },
+      },
+      responses: { 
+        200: { 
+          description: 'OTP sent to phone',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean' },
+                  message: { type: 'string', example: 'OTP sent to your phone number' },
+                  userId: { type: 'string' },
+                },
+              },
+            },
+          },
+        }, 
+        400: { description: 'Bad request' } 
+      },
+    },
+  },
+  '/api/auth/phone/verify-otp': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Verify phone OTP and complete registration/login',
+      description: 'Public endpoint. Verifies the OTP sent to phone and completes registration/login. Returns JWT token.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/PhoneVerifyOTPRequest' } },
+        },
+      },
+      responses: { 
+        200: { 
+          description: 'Phone verified successfully',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthResponse' },
+            },
+          },
+        }, 
+        400: { description: 'Invalid or expired OTP' },
+        404: { description: 'User not found' }
+      },
+    },
+  },
+  '/api/auth/google': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Login/Register with Google',
+      description: 'Public endpoint. Authenticates user with Google ID token. Creates new user if not exists, or logs in existing user. Returns JWT token.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/GoogleAuthRequest' } },
+        },
+      },
+      responses: { 
+        200: { 
+          description: 'Google authentication successful',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/AuthResponse' },
+            },
+          },
+        }, 
+        400: { description: 'Bad request' },
+        500: { description: 'Server error' }
+      },
+    },
+  },
+  '/api/auth/resend-otp': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Resend OTP to email or phone',
+      description: 'Public endpoint. Resends OTP to the provided email or phone number.',
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': { schema: { $ref: '#/components/schemas/ResendOTPRequest' } },
+        },
+      },
+      responses: { 
+        200: { 
+          description: 'OTP resent successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean' },
+                  message: { type: 'string', example: 'OTP resent to your email' },
+                },
+              },
+            },
+          },
+        }, 
+        400: { description: 'Bad request' },
+        404: { description: 'User not found' }
+      },
     },
   },
   '/api/auth/me': {
     get: {
       tags: ['Auth'],
       summary: 'Get current user',
+      description: 'Private endpoint. Returns current authenticated user details.',
       security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } },
     },
@@ -57,8 +223,8 @@ const buildPaths = () => ({
     get: {
       tags: ['Products'],
       summary: 'List products',
-      description: 'Public access: returns all products. Authenticated Seller: returns only own products. Admin: returns all products.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: returns only own products. Admin: returns all products.',
+      security: [{ bearerAuth: [] }],
       parameters: [
         { name: 'is_visible', in: 'query', schema: { type: 'boolean' } },
         { name: 'category_id', in: 'query', schema: { type: 'string' } },
@@ -82,7 +248,12 @@ const buildPaths = () => ({
                 is_visible: { type: 'boolean' },
                 inventory: { type: 'string' },
                 category_id: { type: 'string' },
-                attribute_ids: { type: 'array', items: { type: 'string' } },
+                attribute_ids: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Array of attribute IDs. Also accepts: JSON string format (e.g., \'["id1","id2"]\') or comma-separated string (e.g., "id1,id2"). Will be automatically parsed to array.',
+                  example: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012']
+                },
                 images: { type: 'array', items: { type: 'string', format: 'binary' } },
                 seller_id: { type: 'string', example: '507f1f77bcf86cd799439011', description: 'Seller ID who owns this product' },
               },
@@ -100,8 +271,8 @@ const buildPaths = () => ({
     get: { 
       tags: ['Products'], 
       summary: 'Get product',
-      description: 'Public access: can view any product. Authenticated Seller: can only view own products. Admin: can view any product.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: can only view own products. Admin: can view any product.',
+      security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access own products' }, 404: { description: 'Not found' } } 
     },
     put: {
@@ -121,7 +292,12 @@ const buildPaths = () => ({
                 is_visible: { type: 'boolean' },
                 inventory: { type: 'string' },
                 category_id: { type: 'string' },
-                attribute_ids: { type: 'array', items: { type: 'string' } },
+                attribute_ids: { 
+                  type: 'array', 
+                  items: { type: 'string' },
+                  description: 'Array of attribute IDs. Also accepts: JSON string format (e.g., \'["id1","id2"]\') or comma-separated string (e.g., "id1,id2"). Will be automatically parsed to array.',
+                  example: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012']
+                },
                 images: { type: 'array', items: { type: 'string', format: 'binary' } },
                 imagesToKeep: { type: 'array', items: { type: 'string' }, description: 'URLs of existing images to keep' },
                 seller_id: { type: 'string', example: '507f1f77bcf86cd799439011', description: 'Seller ID who owns this product' },
@@ -137,7 +313,13 @@ const buildPaths = () => ({
   },
   '/api/products/{id}/redirect': {
     parameters: [idParam],
-    put: { tags: ['Products'], summary: 'Increment product redirect', responses: { 200: { description: 'OK' } } },
+    put: { 
+      tags: ['Products'], 
+      summary: 'Increment product redirect',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
   },
 
   // Categories
@@ -145,8 +327,8 @@ const buildPaths = () => ({
     get: { 
       tags: ['Categories'], 
       summary: 'List categories',
-      description: 'Public access: returns all categories. Authenticated Seller: returns only own categories. Admin: returns all categories.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: returns only own categories. Admin: returns all categories.',
+      security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' } } 
     },
     post: { tags: ['Categories'], summary: 'Create category', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryCreate' } } } }, responses: { 201: { description: 'Created' } } },
@@ -156,8 +338,8 @@ const buildPaths = () => ({
     get: { 
       tags: ['Categories'], 
       summary: 'Get category',
-      description: 'Public access: can view any category. Authenticated Seller: can only view own categories. Admin: can view any category.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: can only view own categories. Admin: can view any category.',
+      security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access own categories' }, 404: { description: 'Not found' } } 
     },
     put: { tags: ['Categories'], summary: 'Update category', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/CategoryUpdate' } } } }, responses: { 200: { description: 'OK' } } },
@@ -328,24 +510,49 @@ const buildPaths = () => ({
 
   // Hero Slides
   '/api/hero-slides': {
-    get: { tags: ['HeroSlides'], summary: 'List hero slides', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['HeroSlides'], 
+      summary: 'List hero slides',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } 
+    },
     post: { tags: ['HeroSlides'], summary: 'Create hero slide', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/HeroSlideCreate' } } } }, responses: { 201: { description: 'Created' } } },
   },
   '/api/hero-slides/{id}': {
     parameters: [idParam],
-    get: { tags: ['HeroSlides'], summary: 'Get hero slide', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['HeroSlides'], 
+      summary: 'Get hero slide',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
     put: { tags: ['HeroSlides'], summary: 'Update hero slide', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/HeroSlideUpdate' } } } }, responses: { 200: { description: 'OK' } } },
     delete: { tags: ['HeroSlides'], summary: 'Delete hero slide', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },
 
   // Stories
   '/api/stories': {
-    get: { tags: ['Stories'], summary: 'List stories', parameters: [{ name: 'is_visible', in: 'query', schema: { type: 'boolean' } }], responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Stories'], 
+      summary: 'List stories',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      parameters: [{ name: 'is_visible', in: 'query', schema: { type: 'boolean' } }], 
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } 
+    },
     post: { tags: ['Stories'], summary: 'Create story', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StoryCreate' } } } }, responses: { 201: { description: 'Created' } } },
   },
   '/api/stories/{id}': {
     parameters: [idParam],
-    get: { tags: ['Stories'], summary: 'Get story', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['Stories'], 
+      summary: 'Get story',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
     put: { tags: ['Stories'], summary: 'Update story', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/StoryUpdate' } } } }, responses: { 200: { description: 'OK' } } },
     delete: { tags: ['Stories'], summary: 'Delete story', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },
@@ -360,12 +567,24 @@ const buildPaths = () => ({
 
   // Story Cards
   '/api/story-cards': {
-    get: { tags: ['StoryCards'], summary: 'List story cards', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['StoryCards'], 
+      summary: 'List story cards',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' } } 
+    },
     post: { tags: ['StoryCards'], summary: 'Create story card', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/StoryCardCreate' } } } }, responses: { 201: { description: 'Created' } } },
   },
   '/api/story-cards/{id}': {
     parameters: [idParam],
-    get: { tags: ['StoryCards'], summary: 'Get story card', responses: { 200: { description: 'OK' } } },
+    get: { 
+      tags: ['StoryCards'], 
+      summary: 'Get story card',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
     put: { tags: ['StoryCards'], summary: 'Update story card', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/StoryCardUpdate' } } } }, responses: { 200: { description: 'OK' } } },
     delete: { tags: ['StoryCards'], summary: 'Delete story card', security: [{ bearerAuth: [] }], responses: { 200: { description: 'OK' } } },
   },
@@ -375,8 +594,8 @@ const buildPaths = () => ({
     get: { 
       tags: ['Attributes'], 
       summary: 'List attributes',
-      description: 'Public access: returns all attributes. Authenticated Seller: returns only attributes from own products. Admin: returns all attributes.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: returns only attributes from own products. Admin: returns all attributes.',
+      security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' } } 
     },
     post: { tags: ['Attributes'], summary: 'Create attribute', security: [{ bearerAuth: [] }], requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/AttributeCreate' } } } }, responses: { 201: { description: 'Created' } } },
@@ -386,8 +605,8 @@ const buildPaths = () => ({
     get: { 
       tags: ['Attributes'], 
       summary: 'Get attribute',
-      description: 'Public access: can view any attribute. Authenticated Seller: can only view attributes from own products. Admin: can view any attribute.',
-      security: [{ bearerAuth: [] }], // Optional authentication
+      description: 'Authentication required. Seller: can only view attributes from own products. Admin: can view any attribute.',
+      security: [{ bearerAuth: [] }],
       responses: { 200: { description: 'OK' }, 403: { description: 'Forbidden - Can only access attributes from own products' }, 404: { description: 'Not found' } } 
     },
     put: { tags: ['Attributes'], summary: 'Update attribute', security: [{ bearerAuth: [] }], requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/AttributeUpdate' } } } }, responses: { 200: { description: 'OK' } } },
@@ -411,11 +630,23 @@ const buildPaths = () => ({
   },
   '/api/analytics/{id}/views': {
     parameters: [idParam],
-    put: { tags: ['Analytics'], summary: 'Increment views', responses: { 200: { description: 'OK' } } },
+    put: { 
+      tags: ['Analytics'], 
+      summary: 'Increment views',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
   },
   '/api/analytics/{id}/clicks': {
     parameters: [idParam],
-    put: { tags: ['Analytics'], summary: 'Increment clicks', responses: { 200: { description: 'OK' } } },
+    put: { 
+      tags: ['Analytics'], 
+      summary: 'Increment clicks',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
+      responses: { 200: { description: 'OK' }, 401: { description: 'Unauthorized' }, 404: { description: 'Not found' } } 
+    },
   },
 
   // Health
@@ -424,6 +655,8 @@ const buildPaths = () => ({
     post: {
       tags: ['Uploads'],
       summary: 'Upload multiple files (images or videos)',
+      description: 'Authentication required.',
+      security: [{ bearerAuth: [] }],
       requestBody: {
         required: true,
         content: {
@@ -479,19 +712,84 @@ const swaggerSpec = {
       AuthRegisterRequest: {
         type: 'object',
         properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string', minLength: 6 },
+          email: { type: 'string', format: 'email', example: 'user@example.com' },
+          password: { type: 'string', minLength: 6, example: 'password123' },
         },
         required: ['email', 'password'],
-        description: 'Creates user with "visitor" role by default. After purchase, create seller profile to upgrade to "seller" role.',
+        description: 'Creates user with "visitor" role by default and sends OTP to email. User must verify OTP to complete registration.',
+      },
+      VerifyEmailOTPRequest: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email', example: 'user@example.com' },
+          otp: { type: 'string', example: '123456', description: '6-digit OTP code sent to email' },
+        },
+        required: ['email', 'otp'],
+        description: 'Verify email OTP to complete registration.',
       },
       AuthLoginRequest: {
         type: 'object',
         properties: {
-          email: { type: 'string', format: 'email' },
-          password: { type: 'string' },
+          email: { type: 'string', format: 'email', example: 'user@example.com' },
+          password: { type: 'string', example: 'password123' },
         },
         required: ['email', 'password'],
+        description: 'Login with email and password (for users who completed email registration).',
+      },
+      PhoneSendOTPRequest: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', example: '+1234567890', description: 'Phone number with country code' },
+          email: { type: 'string', format: 'email', example: 'user@example.com', description: 'Email is required for phone signup' },
+        },
+        required: ['phone', 'email'],
+        description: 'Send OTP to phone number. Email is required for phone signup.',
+      },
+      PhoneVerifyOTPRequest: {
+        type: 'object',
+        properties: {
+          phone: { type: 'string', example: '+1234567890', description: 'Phone number with country code' },
+          otp: { type: 'string', example: '123456', description: '6-digit OTP code sent to phone' },
+        },
+        required: ['phone', 'otp'],
+        description: 'Verify phone OTP to complete registration/login.',
+      },
+      GoogleAuthRequest: {
+        type: 'object',
+        properties: {
+          idToken: { type: 'string', example: 'eyJhbGciOiJSUzI1NiIsImtpZCI6Ij...', description: 'Google ID token from client-side Google Sign-In' },
+        },
+        required: ['idToken'],
+        description: 'Google OAuth authentication. Requires Google ID token from client-side authentication.',
+      },
+      ResendOTPRequest: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', format: 'email', example: 'user@example.com', description: 'Email address (provide either email or phone)' },
+          phone: { type: 'string', example: '+1234567890', description: 'Phone number with country code (provide either email or phone)' },
+        },
+        description: 'Resend OTP. Provide either email or phone (not both).',
+      },
+      AuthResponse: {
+        type: 'object',
+        properties: {
+          success: { type: 'boolean', example: true },
+          message: { type: 'string', example: 'Authentication successful' },
+          token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...', description: 'JWT token for authentication' },
+          user: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+              email: { type: 'string', format: 'email', example: 'user@example.com' },
+              phone: { type: 'string', example: '+1234567890' },
+              role: { type: 'string', enum: ['visitor', 'seller', 'admin'], example: 'visitor' },
+              seller_id: { type: 'string', example: '507f1f77bcf86cd799439011', nullable: true },
+              emailVerified: { type: 'boolean', example: true },
+              phoneVerified: { type: 'boolean', example: true },
+            },
+          },
+        },
+        description: 'Authentication response with JWT token and user details.',
       },
       UserRoleUpdate: {
         type: 'object',
@@ -515,7 +813,12 @@ const swaggerSpec = {
           is_visible: { type: 'boolean', default: true },
           inventory: { type: 'string', default: 'In Stock' },
           category_id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-          attribute_ids: { type: 'array', items: { type: 'string' }, example: ['507f1f77bcf86cd799439011'] },
+          attribute_ids: { 
+            type: 'array', 
+            items: { type: 'string' }, 
+            example: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'],
+            description: 'Array of attribute ObjectIds. Also accepts: JSON string format (e.g., \'["id1","id2"]\') or comma-separated string (e.g., "id1,id2"). Will be automatically parsed to array.'
+          },
           seller_id: { type: 'string', example: '507f1f77bcf86cd799439011', description: 'Seller ID who owns this product' },
         },
         required: ['product_name', 'price', 'category_id', 'seller_id'],
@@ -540,7 +843,12 @@ const swaggerSpec = {
           is_visible: { type: 'boolean' },
           inventory: { type: 'string' },
           category_id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-          attribute_ids: { type: 'array', items: { type: 'string' }, example: ['507f1f77bcf86cd799439011'] },
+          attribute_ids: { 
+            type: 'array', 
+            items: { type: 'string' }, 
+            example: ['507f1f77bcf86cd799439011', '507f1f77bcf86cd799439012'],
+            description: 'Array of attribute ObjectIds. Also accepts: JSON string format (e.g., \'["id1","id2"]\') or comma-separated string (e.g., "id1,id2"). Will be automatically parsed to array.'
+          },
           seller_id: { type: 'string', example: '507f1f77bcf86cd799439011', description: 'Seller ID who owns this product' },
         },
       },
