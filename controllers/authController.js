@@ -40,10 +40,8 @@ const register = async (req, res) => {
       email,
       password,
       emailVerified: false,
-      otp: {
-        code: otpCode,
-        expiresAt: otpExpiresAt,
-      },
+      otpCode: otpCode,
+      otpExpiresAt: otpExpiresAt,
     });
 
     // Send OTP via email
@@ -73,17 +71,17 @@ const verifyEmailOTP = async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and OTP' });
     }
 
-    const user = await User.findOne({ email }).select('+otp.code +otp.expiresAt');
+    const user = await User.findOne({ email }).select('+otpCode +otpExpiresAt');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!user.otp || !user.otp.code) {
+    if (!user.otpCode) {
       return res.status(400).json({ message: 'No OTP found. Please request a new OTP.' });
     }
 
-    const isValid = verifyOTP(user.otp.code, user.otp.expiresAt, otp);
+    const isValid = verifyOTP(user.otpCode, user.otpExpiresAt, otp);
 
     if (!isValid) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
@@ -91,7 +89,8 @@ const verifyEmailOTP = async (req, res) => {
 
     // Mark email as verified and clear OTP
     user.emailVerified = true;
-    user.otp = undefined;
+    user.otpCode = undefined;
+    user.otpExpiresAt = undefined;
     await user.save();
 
     const token = user.getSignedJwtToken();
@@ -181,10 +180,8 @@ const sendPhoneOTP = async (req, res) => {
 
     if (user) {
       // Update OTP for existing user
-      user.otp = {
-        code: otpCode,
-        expiresAt: otpExpiresAt,
-      };
+      user.otpCode = otpCode;
+      user.otpExpiresAt = otpExpiresAt;
       // Update email if provided and different
       if (email && email !== user.email) {
         user.email = email;
@@ -197,10 +194,8 @@ const sendPhoneOTP = async (req, res) => {
         email,
         phoneVerified: false,
         emailVerified: false,
-        otp: {
-          code: otpCode,
-          expiresAt: otpExpiresAt,
-        },
+        otpCode: otpCode,
+        otpExpiresAt: otpExpiresAt,
       });
     }
 
@@ -232,17 +227,17 @@ const verifyPhoneOTP = async (req, res) => {
       return res.status(400).json({ message: 'Please provide phone number and OTP' });
     }
 
-    const user = await User.findOne({ phone }).select('+otp.code +otp.expiresAt');
+    const user = await User.findOne({ phone }).select('+otpCode +otpExpiresAt');
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    if (!user.otp || !user.otp.code) {
+    if (!user.otpCode) {
       return res.status(400).json({ message: 'No OTP found. Please request a new OTP.' });
     }
 
-    const isValid = verifyOTP(user.otp.code, user.otp.expiresAt, otp);
+    const isValid = verifyOTP(user.otpCode, user.otpExpiresAt, otp);
 
     if (!isValid) {
       return res.status(400).json({ message: 'Invalid or expired OTP' });
@@ -250,7 +245,8 @@ const verifyPhoneOTP = async (req, res) => {
 
     // Mark phone as verified and clear OTP
     user.phoneVerified = true;
-    user.otp = undefined;
+    user.otpCode = undefined;
+    user.otpExpiresAt = undefined;
     await user.save();
 
     const token = user.getSignedJwtToken();
@@ -351,9 +347,9 @@ const resendOTP = async (req, res) => {
 
     let user;
     if (phone) {
-      user = await User.findOne({ phone }).select('+otp.code +otp.expiresAt');
+      user = await User.findOne({ phone }).select('+otpCode +otpExpiresAt');
     } else {
-      user = await User.findOne({ email }).select('+otp.code +otp.expiresAt');
+      user = await User.findOne({ email }).select('+otpCode +otpExpiresAt');
     }
 
     if (!user) {
@@ -364,10 +360,8 @@ const resendOTP = async (req, res) => {
     const otpCode = generateOTP();
     const otpExpiresAt = getOTPExpiration(10);
 
-    user.otp = {
-      code: otpCode,
-      expiresAt: otpExpiresAt,
-    };
+    user.otpCode = otpCode;
+    user.otpExpiresAt = otpExpiresAt;
     await user.save();
 
     // Send OTP
@@ -395,7 +389,7 @@ const resendOTP = async (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user._id)
-      .select('-password -otp')
+      .select('-password -otpCode -otpExpiresAt')
       .populate('seller_id');
 
     res.status(200).json({
