@@ -218,9 +218,24 @@ const updateProduct = async (req, res) => {
     // Determine which old images to delete
     // If imagesToKeep is not in request at all -> keep all existing images
     // If imagesToKeep is in request (even as empty array) -> only keep specified images
-    const imagesToKeep = 'imagesToKeep' in req.body
-      ? (Array.isArray(req.body.imagesToKeep) ? req.body.imagesToKeep : [])
-      : existingProduct.images;
+    let imagesToKeep = existingProduct.images;
+    if ('imagesToKeep' in req.body) {
+      if (Array.isArray(req.body.imagesToKeep)) {
+        imagesToKeep = req.body.imagesToKeep;
+      } else if (typeof req.body.imagesToKeep === 'string') {
+        // Parse JSON string from FormData
+        try {
+          imagesToKeep = JSON.parse(req.body.imagesToKeep);
+          if (!Array.isArray(imagesToKeep)) {
+            imagesToKeep = [];
+          }
+        } catch (e) {
+          imagesToKeep = [];
+        }
+      } else {
+        imagesToKeep = [];
+      }
+    }
     
     // Find images that aren't in the keep list
     const imagesToDelete = existingProduct.images.filter(
